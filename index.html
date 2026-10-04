@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>The Amazing Digital Fly - Garden & Perching Feature</title>
+    <title>The Amazing Digital Fly - Fixed Perch Duration</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -93,7 +93,7 @@
         ground.rotation.x = -Math.PI / 2;
         scene.add(ground);
 
-        // --- TAMBAHAN BUNGA-BUNGA TAMAN YANG INDAH & RINGAN ---
+        // --- BUNGA-BUNGA TAMAN ---
         const flowerColors = [0xff3366, 0xffeb3b, 0xff9800, 0xe91e63, 0xffffff];
         for (let i = 0; i < 40; i++) {
             const flowerGroup = new THREE.Group();
@@ -201,33 +201,32 @@
         const eyeRayLine = new THREE.Line(rayGeometry, rayLineMat);
         scene.add(eyeRayLine);
 
-        // --- OTAK SNN & FITUR NENGGER (HINGGAP) ---
+        // --- OTAK SNN & FITUR NENGGER (DURASI WAJAR: 3 - 12 DETIK) ---
         class SNNFlyBrain {
             constructor() { 
                 this.time = 0; 
                 this.isPerched = false;
                 this.perchTimer = 0;
-                this.nextPerchCheck = 300; // Interval cek nengger
+                this.nextPerchCheck = 250; 
             }
             step(eyeLeft, eyeFront, eyeRight) {
                 this.time++;
 
-                // Logika Nengger Acak (Kadang sebentar, kadang agak lama sampai 1 menit / 3600 frame)
+                // Logika Nengger Normal (Durasi 3 s.d 12 detik saja, alias 180 - 720 frame)
                 if (!this.isPerched && this.time > this.nextPerchCheck) {
-                    if (Math.random() < 0.25) { // 25% peluang nengger saat waktu cek tiba
+                    if (Math.random() < 0.3) { 
                         this.isPerched = true;
-                        // Durasi nengger acak: dari cepat (3 detik) sampai lama (bisa mendekati 1 menit / 3500 frame)
-                        this.perchTimer = Math.floor(Math.random() * 3200) + 180; 
+                        this.perchTimer = Math.floor(Math.random() * 540) + 180; // 3 sampai 12 detik
                     }
-                    this.nextPerchCheck = this.time + Math.floor(Math.random() * 900) + 400;
+                    this.nextPerchCheck = this.time + Math.floor(Math.random() * 400) + 300;
                 }
 
                 if (this.isPerched) {
                     this.perchTimer--;
                     if (this.perchTimer <= 0 || eyeFront > 0.25) {
-                        this.isPerched = false; // Terbang lagi kalau waktunya habis atau ada halangan dekat
+                        this.isPerched = false; 
                     }
-                    return { forward: 0, turn: 0, lift: 0, perched: true, text: "💤 Sedang Nengger (Hinggap)", color: "#00BCD4" };
+                    return { forward: 0, turn: 0, lift: 0, perched: true, text: "💤 Sedang Nengger Istirahat", color: "#00BCD4" };
                 }
 
                 let turn = 0;
@@ -386,7 +385,6 @@
                 if (posY > 4.0) posY = 4.0;
                 rotZ = THREE.MathUtils.lerp(rotZ, -smoothTurn * 0.8, 0.1);
             } else {
-                // Posisi saat nengger di tanah/permukaan bawah
                 posY = THREE.MathUtils.lerp(posY, 0.15, 0.05);
                 rotX = THREE.MathUtils.lerp(rotX, 0.2, 0.05);
                 rotZ = THREE.MathUtils.lerp(rotZ, 0, 0.05);
@@ -419,7 +417,7 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
     </script>
-    <script src="https://pl31655377.profitableratecpmnetwork.com/c6/d7/62/c6d7626fce1b5f1670359b8e1c8f1ff1.js"></script>
 </body>
+    <script src="https://pl31655377.profitableratecpmnetwork.com/c6/d7/62/c6d7626fce1b5f1670359b8e1c8f1ff1.js"></script>
     </html>
     
