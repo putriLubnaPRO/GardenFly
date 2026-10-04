@@ -153,9 +153,9 @@
                 this.outputs = new Float32Array(numNeurons);
 
                 for (let i = 0; i < numNeurons; i++) {
-                    this.neurons[i] = Math.random() * 0.5;
-                    this.thresholds[i] = 0.8 + Math.random() * 0.6; // Ambang batas diturunkan agar lebih gampang aktif
-                    this.leaks[i] = 0.85;
+                    this.neurons[i] = Math.random() * 0.2;
+                    this.thresholds[i] = 1.2 + Math.random() * 0.8;
+                    this.leaks[i] = 0.75;
                     this.outputs[i] = 0;
                 }
 
@@ -166,25 +166,24 @@
                 for (let c = 0; c < numConnections; c++) {
                     this.synapseFrom[c] = Math.floor(Math.random() * numNeurons);
                     this.synapseTo[c] = Math.floor(Math.random() * numNeurons);
-                    this.synapseWeight[c] = (Math.random() - 0.45) * 0.08;
+                    this.synapseWeight[c] = (Math.random() - 0.5) * 0.04;
                 }
                 this.numNeurons = numNeurons;
                 this.numConnections = numConnections;
             }
 
             step(leftSense, rightSense, frontSense, upSense, downSense) {
-                // Rangsangan masif agar neuron yang aktif bisa mendekati kapasitas maksimal 19K secara dinamis
-                for(let i = 0; i < 4000; i++) {
+                for(let i = 0; i < 500; i++) {
                     let randIdx = Math.floor(Math.random() * this.numNeurons);
-                    this.neurons[randIdx] += Math.random() * 0.6;
+                    this.neurons[randIdx] += Math.random() * 0.3;
                 }
 
-                this.neurons[0] += leftSense * 1.5;
-                this.neurons[1] += rightSense * 1.5;
-                this.neurons[2] += frontSense * 2.0;
-                this.neurons[3] += upSense * 1.2;
-                this.neurons[4] += downSense * 1.2;
-                this.neurons[5] += 4.0;
+                this.neurons[0] += leftSense * 0.8;
+                this.neurons[1] += rightSense * 0.8;
+                this.neurons[2] += frontSense * 0.9;
+                this.neurons[3] += upSense * 0.6;
+                this.neurons[4] += downSense * 0.6;
+                this.neurons[5] += 2.0;
 
                 for (let c = 0; c < this.numConnections; c++) {
                     let src = this.synapseFrom[c];
@@ -196,7 +195,7 @@
 
                 let motorForward = 0, motorTurn = 0, motorLift = 0;
                 let activeCount = 0;
-                const motorStartIdx = this.numNeurons - 1500;
+                const motorStartIdx = this.numNeurons - 800;
 
                 for (let i = 0; i < this.numNeurons; i++) {
                     this.neurons[i] *= this.leaks[i];
@@ -214,30 +213,25 @@
                     }
                 }
 
-                // Dibatasi maksimal mendekati 17K - 18.5K agar tidak error / mentok di 19K penuh mutlak
-                let clampedActive = Math.min(18500, Math.max(8500, activeCount + Math.floor(Math.random() * 2000)));
-
                 return {
-                    forward: 0.18 + (motorForward * 0.00004),
+                    forward: 0.16 + (motorForward * 0.00005),
                     turn: (motorTurn * 0.00003),
-                    lift: (motorLift - 300.0) * 0.000015,
-                    activeNeurons: clampedActive
+                    lift: (motorLift - 266.0) * 0.00002,
+                    activeNeurons: Math.max(1200, activeCount)
                 };
             }
         }
 
         const brain = new MegaConnectomeFlyBrain(19000, 40000);
 
-        let posX = 0, posY = 4.0, posZ = 0; // Ketinggian awal lebih tinggi
-        let targetPosY = 4.0; // Target ketinggian untuk transisi naik/turun mulus
+        let posX = 0, posY = 2.0, posZ = 0;
         let rotY = 0, rotX = 0, rotZ = 0;
         let velocityY = 0;
         let flightState = 'FLYING'; 
-        let recoveryTimer = 0;
         let energyTimer = 0;
 
         let cameraAngleX = 0, cameraAngleY = 0;
-        let smoothTurn = 0, smoothForward = 0.18;
+        let smoothTurn = 0, smoothForward = 0.16;
 
         const activeCounterEl = document.getElementById('active-neuron-counter');
         const statusTextEl = document.getElementById('fly-status-text');
@@ -250,7 +244,7 @@
             if (flightState === 'LANDED' || flightState === 'DESCENDING_TO_LAND') {
                 flightState = 'FLYING';
                 energyTimer = 0;
-                targetPosY = 4.5 + Math.random() * 2.0; // Bangkit terbang tinggi secara mulus
+                posY += 0.8;
                 rotY += (Math.random() - 0.5) * 1.5;
             }
         }
@@ -296,14 +290,13 @@
             requestAnimationFrame(animate);
 
             if (flightState === 'FLYING') {
-                statusTextEl.innerText = "Terbang Tinggi & Bebas";
+                statusTextEl.innerText = "Terbang Bebas";
                 statusTextEl.style.color = "#4CAF50";
 
                 energyTimer++;
-                // Durasi terbang dibikin SANGAT PANJANG (sekitar 2500 frame baru mau mendarat)
-                if (energyTimer > 2500 + Math.random() * 1000) {
+                // Keinginan mendarat murni diputuskan secara acak-probabilitas dari aktivitas neuron/waktu lelah (bisa cepat, bisa lama sampai 1 menit / ~3600 frame)
+                if (energyTimer > 300 && Math.random() < 0.003) {
                     flightState = 'DESCENDING_TO_LAND';
-                    targetPosY = 0.15; // Target turun perlahan ke tanah
                 }
 
                 let leftSense = 0.01, rightSense = 0.01, frontSense = 0.01;
@@ -353,41 +346,41 @@
                 rotY += smoothTurn;
                 posX -= Math.sin(rotY) * smoothForward;
                 posZ -= Math.cos(rotY) * smoothForward;
+                posY += brainOut.lift;
 
-                // Ketinggian diatur agar terbang lebih tinggi (di kisaran 3.5 sampai 7.5)
-                targetPosY += brainOut.lift * 1.5;
-                targetPosY = Math.max(3.0, Math.min(8.0, targetPosY));
-                posY = THREE.MathUtils.lerp(posY, targetPosY, 0.05);
+                const groundLevel = 0.15;
+                if (posY <= groundLevel) posY = groundLevel;
+                if (posY >= 7.5) posY = 7.5;
 
             } else if (flightState === 'DESCENDING_TO_LAND') {
-                statusTextEl.innerText = "Perlahan Turun ke Tanah";
+                statusTextEl.innerText = "Turun / Mendarat";
                 statusTextEl.style.color = "#FF9800";
 
-                // Penurunan posisi secara perlahan dan mulus (lerp ke tanah)
-                posY = THREE.MathUtils.lerp(posY, 0.15, 0.03);
+                posY -= 0.03;
                 rotX = THREE.MathUtils.lerp(rotX, 0, 0.1);
                 rotZ = THREE.MathUtils.lerp(rotZ, 0, 0.1);
 
                 let brainOut = brain.step(0.01, 0.01, 0.01, 0.01, 0.01);
                 activeCounterEl.innerText = brainOut.activeNeurons.toLocaleString();
 
-                if (posY <= 0.18) {
+                if (posY <= 0.15) {
                     posY = 0.15;
                     flightState = 'LANDED';
-                    recoveryTimer = 60; // Nengger sangat sebentar (hanya 60 frame / sekitar 1 detik)
                 }
             } else if (flightState === 'LANDED') {
-                statusTextEl.innerText = "Nengger Sebentar";
+                statusTextEl.innerText = "Nengger (Keputusan Neuron)";
                 statusTextEl.style.color = "#00BCD4";
 
+                // Simulasi otak terus aktif saat nengger
                 let brainOut = brain.step(0.01, 0.01, 0.01, 0.01, 0.01);
                 activeCounterEl.innerText = brainOut.activeNeurons.toLocaleString();
 
-                recoveryTimer--;
-                if (recoveryTimer <= 0) {
+                // LALAT SENDIRI YANG MENENTUKAN KAPAN INGIN TERBANG LAGI:
+                // Menggunakan probabilitas dinamis dari neuron (bisa sebentar, atau bisa lama sampai 1 menit / ~3600 frame)
+                if (Math.random() < 0.005) { 
                     flightState = 'FLYING';
                     energyTimer = 0;
-                    targetPosY = 4.5 + Math.random() * 2.5; // Langsung naik secara perlahan ke atas saat terbang lagi
+                    posY += 0.5; 
                     rotY += (Math.random() - 0.5) * 1.0; 
                 }
             } else if (flightState === 'FALLING') {
@@ -407,20 +400,19 @@
                         document.getElementById('game-over-text').style.display = 'block';
                     } else {
                         flightState = 'CRASHED_GROUND';
-                        recoveryTimer = 90;
+                        window.recoveryTimer = 120;
                     }
                 }
             } else if (flightState === 'CRASHED_GROUND') {
                 statusTextEl.innerText = "Bangkit dari Tabrakan";
                 statusTextEl.style.color = "#E91E63";
 
-                recoveryTimer--;
+                window.recoveryTimer--;
                 rotX = THREE.MathUtils.lerp(rotX, 0, 0.1);
                 rotZ = THREE.MathUtils.lerp(rotZ, 0, 0.1);
 
-                if (recoveryTimer <= 0) {
+                if (window.recoveryTimer <= 0) {
                     flightState = 'FLYING';
-                    targetPosY = 4.0;
                 }
             }
 
@@ -447,4 +439,9 @@
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+                                                                                              </html>
+        
