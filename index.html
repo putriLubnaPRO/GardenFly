@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>The Amazing Digital Fly - 1000 Neuron SNN with Joystick</title>
+    <title>The Amazing Digital Fly - Smart Autonomous SNN</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -45,8 +45,8 @@
 
     <div id="info">
         <h3>🪰 The Amazing Digital Fly</h3>
-        <p>Otak Saraf SNN: 1.000 Neuron & 899 Koneksi</p>
-        <p>Status: Joystick Aktif & Bisa Hinggap ke Tanah</p>
+        <p>Otak SNN Cerdas: Sensor Pohon & Pagar Aktif</p>
+        <p>Status: Navigasi Otonom & Joystick Kamera</p>
     </div>
 
     <!-- KOTAK IKLAN -->
@@ -64,7 +64,7 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     
     <script>
-        // 1. SETUP DUNIA 3D (Kebun & Langit)
+        // 1. SETUP DUNIA 3D (Kebun, Pagar, & Langit)
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87CEEB);
         scene.fog = new THREE.FogExp2(0x87CEEB, 0.012);
@@ -79,7 +79,7 @@
         sunLight.position.set(30, 50, 20);
         scene.add(sunLight);
 
-        // Tanah & Pohon
+        // Tanah
         const ground = new THREE.Mesh(
             new THREE.PlaneGeometry(100, 100),
             new THREE.MeshStandardMaterial({ color: 0x3b7a57, roughness: 0.9 })
@@ -87,16 +87,39 @@
         ground.rotation.x = -Math.PI / 2;
         scene.add(ground);
 
+        // Pagar Pembatas Keliling Map (Ukuran 80x80)
+        const fenceGroup = new THREE.Group();
+        const fenceMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.8 });
+        const mapSize = 40;
+        
+        for (let i = -mapSize; i <= mapSize; i += 5) {
+            // Pagar Utara & Selatan
+            let p1 = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), fenceMat);
+            p1.position.set(i, 1, mapSize);
+            let p2 = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), fenceMat);
+            p2.position.set(i, 1, -mapSize);
+            fenceGroup.add(p1); fenceGroup.add(p2);
+
+            // Pagar Timur & Barat
+            let p3 = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), fenceMat);
+            p3.position.set(mapSize, 1, i);
+            let p4 = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), fenceMat);
+            p4.position.set(-mapSize, 1, i);
+            fenceGroup.add(p3); fenceGroup.add(p4);
+        }
+        scene.add(fenceGroup);
+
+        // Pohon-pohon di dalam map
         const trees = [];
         for (let i = 0; i < 15; i++) {
             const tree = new THREE.Mesh(
-                new THREE.ConeGeometry(2, 6, 5),
+                new THREE.ConeGeometry(2.5, 7, 5),
                 new THREE.MeshStandardMaterial({ color: 0x234e30 })
             );
-            let x = (Math.random() - 0.5) * 70;
-            let z = (Math.random() - 0.5) * 70;
-            if (Math.abs(x) > 8 || Math.abs(z) > 8) {
-                tree.position.set(x, 3, z);
+            let x = (Math.random() - 0.5) * 60;
+            let z = (Math.random() - 0.5) * 60;
+            if (Math.abs(x) > 6 || Math.abs(z) > 6) {
+                tree.position.set(x, 3.5, z);
                 scene.add(tree);
                 trees.push(tree);
             }
@@ -120,15 +143,15 @@
             flyGroup.add(customModel);
         });
 
-        // 3. OTAK SNN: 1.000 NEURON & 899 KONEKSI
+        // 3. OTAK SNN: 1.000 NEURON & 899 KONEKSI (Dengan Pengolahan Sensor Kompleks)
         class ConnectomeFlyBrain {
             constructor(numNeurons = 1000, numConnections = 899) {
                 this.neurons = [];
                 for (let i = 0; i < numNeurons; i++) {
                     this.neurons.push({
                         voltage: Math.random() * 0.1,
-                        threshold: 1.8 + Math.random() * 0.5,
-                        leak: 0.72,
+                        threshold: 1.7 + Math.random() * 0.6,
+                        leak: 0.70,
                         output: 0
                     });
                 }
@@ -138,15 +161,19 @@
                     this.synapses.push({
                         from: Math.floor(Math.random() * numNeurons),
                         to: Math.floor(Math.random() * numNeurons),
-                        weight: (Math.random() - 0.5) * 0.05
+                        weight: (Math.random() - 0.5) * 0.06
                     });
                 }
             }
 
-            step(leftEye, rightEye) {
-                this.neurons[0].voltage += leftEye * 0.3;
-                this.neurons[1].voltage += rightEye * 0.3;
-                this.neurons[2].voltage += 1.5;
+            step(leftSense, rightSense, frontSense, upSense, downSense) {
+                // Input sensor disebar ke neuron sensorik bagian depan
+                this.neurons[0].voltage += leftSense * 0.4;
+                this.neurons[1].voltage += rightSense * 0.4;
+                this.neurons[2].voltage += frontSense * 0.5;
+                this.neurons[3].voltage += upSense * 0.3;
+                this.neurons[4].voltage += downSense * 0.3;
+                this.neurons[5].voltage += 1.2; // Dorongan dasar kehidupan lalat
 
                 for (let s of this.synapses) {
                     if (this.neurons[s.from].output > 0) {
@@ -172,8 +199,8 @@
                 }
 
                 return {
-                    forward: 0.2 + (motorForward * 0.01),
-                    turn: (motorTurn * 0.0015),
+                    forward: 0.15 + (motorForward * 0.008),
+                    turn: (motorTurn * 0.002),
                     lift: (motorLift - 1.0) * 0.004
                 };
             }
@@ -184,7 +211,7 @@
         let posX = 0, posY = 0.15, posZ = 0;
         let rotY = 0;
         let cameraAngleX = 0, cameraAngleY = 0;
-        let smoothTurn = 0, smoothForward = 0.2;
+        let smoothTurn = 0, smoothForward = 0.15;
 
         // 4. KONTROL VIRTUAL JOYSTICK
         let joystickMove = { x: 0, y: 0 };
@@ -209,7 +236,6 @@
             joystickMove.x = 0; joystickMove.y = 0;
         });
 
-        // Dukungan Mouse (buat uji coba di laptop kalau pakai browser)
         let isMouseDown = false;
         base.addEventListener('mousedown', () => { isMouseDown = true; });
         window.addEventListener('mousemove', (e) => {
@@ -231,61 +257,85 @@
             joystickMove.x = 0; joystickMove.y = 0;
         });
 
-        // 5. LOOP UTAMA
+        // 5. LOOP UTAMA (SISTEM SENSOR KELILING & PENGAMBILAN KEPUTUSAN OTAK)
         function animate() {
             requestAnimationFrame(animate);
 
-            let adaTembokKiri = 0.01, adaTembokKanan = 0.01;
-            
+            let leftSense = 0.01, rightSense = 0.01, frontSense = 0.01;
+            let upSense = 0.01, downSense = 0.01;
+
+            let flyPos = new THREE.Vector3(posX, posY, posZ);
+            let flyDir = new THREE.Vector3(-Math.sin(rotY), 0, -Math.cos(rotY));
+
+            // A. Deteksi Rintangan Pohon di Sekitar Lalat
             trees.forEach(tree => {
-                let dist = new THREE.Vector3(posX, posY, posZ).distanceTo(tree.position);
-                if (dist < 7) {
-                    let dirToTree = new THREE.Vector3().subVectors(tree.position, new THREE.Vector3(posX, posY, posZ)).normalize();
-                    let flyDir = new THREE.Vector3(Math.sin(rotY), 0, Math.cos(rotY));
-                    let cross = flyDir.cross(dirToTree).y;
-                    if (cross > 0) adaTembokKanan += (7 - dist) * 0.1;
-                    else adaTembokKiri += (7 - dist) * 0.1;
+                let dist = flyPos.distanceTo(tree.position);
+                if (dist < 6) {
+                    let dirToTree = new THREE.Vector3().subVectors(tree.position, flyPos).normalize();
+                    let cross = flyDir.clone().cross(dirToTree).y;
+                    let dot = flyDir.clone().dot(dirToTree);
+
+                    if (dot > 0.3) frontSense += (6 - dist) * 0.3; // Ada pohon di depan
+                    if (cross > 0) rightSense += (6 - dist) * 0.3; // Pohon di sebelah kanan
+                    else leftSense += (6 - dist) * 0.3;          // Pohon di sebelah kiri
                 }
             });
 
-            let brainOut = brain.step(adaTembokKiri, adaTembokKanan);
+            // B. Deteksi Pagar Pembatas Map & Tanah
+            const limit = 38;
+            if (posX > limit) { rightSense += 0.8; }
+            if (posX < -limit) { leftSense += 0.8; }
+            if (posZ > limit) { frontSense += 0.8; }
+            if (posZ < -limit) { frontSense += 0.8; }
 
-            let steeringCorrection = (adaTembokKanan - adaTembokKiri) * 0.008;
-            let targetTurn = brainOut.turn + steeringCorrection;
+            // Deteksi Ketinggian Tanah & Langit untuk Otak SNN
+            if (posY < 0.5) { downSense += 0.5; } // Mau dekat tanah (bisa hinggap)
+            if (posY > 6.0) { upSense += 0.5; }   // Terlalu tinggi
 
-            smoothTurn = THREE.MathUtils.lerp(smoothTurn, targetTurn, 0.05);
-            smoothForward = THREE.MathUtils.lerp(smoothForward, brainOut.forward, 0.05);
+            // Kirim data ke Otak SNN
+            let brainOut = brain.step(leftSense, rightSense, frontSense, upSense, downSense);
+
+            // Pertimbangan Keputusan Gerak (Kiri, Kanan, Lurus, Naik, Turun)
+            let obstacleAvoidance = (rightSense - leftSense) * 0.015;
+            let targetTurn = brainOut.turn + obstacleAvoidance;
+
+            // Kalau ada halangan di depan, otak memaksa lalat belok tajam
+            if (frontSense > 0.2) {
+                targetTurn += 0.08;
+            }
+
+            smoothTurn = THREE.MathUtils.lerp(smoothTurn, targetTurn, 0.08);
+            smoothForward = THREE.MathUtils.lerp(smoothForward, brainOut.forward, 0.08);
 
             rotY += smoothTurn;
 
+            // Update Posisi
             posX -= Math.sin(rotY) * smoothForward;
             posZ -= Math.cos(rotY) * smoothForward;
-            posY += brainOut.lift; 
+            posY += brainOut.lift;
 
-            // --- PEMBATAS MAP & TANAH ---
-            const mapLimit = 42;
-            if (posX > mapLimit) { posX = mapLimit; rotY += 0.1; }
-            if (posX < -mapLimit) { posX = -mapLimit; rotY += 0.1; }
-            if (posZ > mapLimit) { posZ = mapLimit; rotY += 0.1; }
-            if (posZ < -mapLimit) { posZ = -mapLimit; rotY += 0.1; }
+            // --- BATAS FISIK MUTLAK (AGAR TIDAK PERNAH TEMBUS PAGAR / TANAH) ---
+            const absoluteLimit = 39;
+            posX = Math.max(-absoluteLimit, Math.min(absoluteLimit, posX));
+            posZ = Math.max(-absoluteLimit, Math.min(absoluteLimit, posZ));
 
             const groundLevel = 0.15; 
-            const skyLimit = 8.0;
-            if (posY < groundLevel) { posY = groundLevel; }
+            const skyLimit = 7.5;
+            if (posY < groundLevel) { posY = groundLevel; } // Istirahat di tanah
             if (posY > skyLimit) { posY = skyLimit; }
 
-            // Terapkan ke Model
+            // Terapkan ke Model Lalat
             flyGroup.position.set(posX, posY, posZ);
             flyGroup.rotation.y = rotY;
 
-            // Kontrol Kamera lewat Joystick
+            // Kamera Mengikuti dengan Joystick
             cameraAngleY -= joystickMove.x * 0.03;
             cameraAngleX += joystickMove.y * 0.02;
             cameraAngleX = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, cameraAngleX));
 
             let camDist = 5.0;
-            camera.position.x = posX - Math.sin(rotY + cameraAngleY) * camDist;
-            camera.position.z = posZ - Math.cos(rotY + cameraAngleY) * camDist;
+            camera.position.x = posX + Math.sin(rotY + cameraAngleY) * camDist;
+            camera.position.z = posZ + Math.cos(rotY + cameraAngleY) * camDist;
             camera.position.y = posY + 2.0 + cameraAngleX * 2.5;
             camera.lookAt(posX, posY + 0.3, posZ);
 
