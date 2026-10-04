@@ -294,7 +294,6 @@
                 statusTextEl.style.color = "#4CAF50";
 
                 energyTimer++;
-                // Keinginan mendarat murni diputuskan secara acak-probabilitas dari aktivitas neuron/waktu lelah (bisa cepat, bisa lama sampai 1 menit / ~3600 frame)
                 if (energyTimer > 300 && Math.random() < 0.003) {
                     flightState = 'DESCENDING_TO_LAND';
                 }
@@ -326,11 +325,12 @@
                     rotZ = (Math.random() - 0.5) * Math.PI;
                 }
 
+                // Perbaikan Batas Peta: Mengirim sinyal sensor panik & belok mulus tanpa teleport kaku
                 const limit = 47;
-                if (posX > limit) { posX = limit; rotY += Math.PI; }
-                if (posX < -limit) { posX = -limit; rotY += Math.PI; }
-                if (posZ > limit) { posZ = limit; rotY += Math.PI; }
-                if (posZ < -limit) { posZ = -limit; rotY += Math.PI; }
+                if (posX > limit) { posX = limit; rotY += 0.2; frontSense += 2.0; }
+                if (posX < -limit) { posX = -limit; rotY -= 0.2; frontSense += 2.0; }
+                if (posZ > limit) { posZ = limit; rotY += 0.2; frontSense += 2.0; }
+                if (posZ < -limit) { posZ = -limit; rotY -= 0.2; frontSense += 2.0; }
 
                 let brainOut = brain.step(leftSense, rightSense, frontSense, upSense, downSense);
                 activeCounterEl.innerText = brainOut.activeNeurons.toLocaleString();
@@ -371,12 +371,9 @@
                 statusTextEl.innerText = "Nengger (Keputusan Neuron)";
                 statusTextEl.style.color = "#00BCD4";
 
-                // Simulasi otak terus aktif saat nengger
                 let brainOut = brain.step(0.01, 0.01, 0.01, 0.01, 0.01);
                 activeCounterEl.innerText = brainOut.activeNeurons.toLocaleString();
 
-                // LALAT SENDIRI YANG MENENTUKAN KAPAN INGIN TERBANG LAGI:
-                // Menggunakan probabilitas dinamis dari neuron (bisa sebentar, atau bisa lama sampai 1 menit / ~3600 frame)
                 if (Math.random() < 0.005) { 
                     flightState = 'FLYING';
                     energyTimer = 0;
@@ -443,5 +440,5 @@
         });
     </script>
 </body>
-                                                                                              </html>
-        
+    </html>
+    
