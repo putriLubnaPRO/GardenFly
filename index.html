@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Full Connectome Fly - 1000 Neuron SNN</title>
+    <title>Natural Dynamic Connectome Fly - SNN</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -45,9 +45,9 @@
 <body>
 
     <div id="ui">
-        <h2>🪰 Real Brain Connectome Fly</h2>
+        <h2>🪰 Natural Fly Connectome</h2>
         <p>Jaringan Otak: 1.000 Neuron & 899 Koneksi</p>
-        <p>Status: Dorongan Internal Aktif (Eksplorasi Kebun)</p>
+        <p>Status: Navigasi Aktif (Maju, Belok, Naik-Turun)</p>
         <p>Kontrol: Gunakan Joystick di Kiri</p>
     </div>
 
@@ -122,43 +122,43 @@
             flyGroup.add(customModel);
         });
 
-        // 3. OTAK SNN: 1.000 NEURON & 899 KONEKSI SINAPSIS
-        class MassiveFlyBrain {
+        // 3. OTAK SNN: 1.000 NEURON & 899 KONEKSI (Stabilized Navigation)
+        class StableFlyBrain {
             constructor(numNeurons = 1000, numConnections = 899) {
                 this.neurons = [];
                 for (let i = 0; i < numNeurons; i++) {
                     this.neurons.push({
-                        voltage: Math.random() * 0.3,
-                        threshold: 1.0 + Math.random() * 0.5,
-                        leak: 0.85,
+                        voltage: Math.random() * 0.2,
+                        threshold: 0.9 + Math.random() * 0.4,
+                        leak: 0.82,
                         output: 0
                     });
                 }
 
-                // Membangun 899 Jalur Sinapsis Terarah Antar Neuron
+                // 899 Koneksi sinapsis dengan bobot terarah
                 this.synapses = [];
                 for (let c = 0; c < numConnections; c++) {
                     this.synapses.push({
                         from: Math.floor(Math.random() * numNeurons),
                         to: Math.floor(Math.random() * numNeurons),
-                        weight: (Math.random() - 0.25) * 0.35
+                        weight: (Math.random() - 0.45) * 0.3 // Dioptimalkan agar tidak berputar liar
                     });
                 }
             }
 
-            step(hungerDrive) {
-                // Sinyal lapar / eksplorasi memicu neuron sensorik awal
-                this.neurons[0].voltage += hungerDrive * 1.8;
-                this.neurons[1].voltage += (Math.random() - 0.5) * 1.2;
+            step(environmentalInput) {
+                // Input sensorik eksternal & internal lapar
+                this.neurons[0].voltage += environmentalInput.forwardDrive * 1.5;
+                this.neurons[1].voltage += environmentalInput.obstacle * 1.2;
 
-                // Propagasi sinyal listrik melalui 899 koneksi
+                // Propagasi sinyal listrik
                 for (let s of this.synapses) {
                     if (this.neurons[s.from].output > 0) {
                         this.neurons[s.to].voltage += s.weight;
                     }
                 }
 
-                // Kalkulasi Leaky Integrate-and-Fire untuk 1.000 neuron
+                // Update Leaky Integrate-and-Fire
                 for (let n of this.neurons) {
                     n.voltage *= n.leak;
                     if (n.voltage >= n.threshold) {
@@ -169,31 +169,29 @@
                     }
                 }
 
-                // Ambil hasil keputusan motorik dari kelompok neuron akhir (900 - 999)
-                let motorForward = 0;
-                let motorTurn = 0;
-                let motorLift = 0;
+                // Ekstraksi motorik dari neuron akhir (900 - 999)
+                let mForward = 0, mTurn = 0, mLift = 0;
                 for (let i = 900; i < this.neurons.length; i++) {
-                    if (i % 3 === 0) motorForward += this.neurons[i].output;
-                    else if (i % 3 === 1) motorTurn += this.neurons[i].output;
-                    else motorLift += this.neurons[i].output;
+                    if (i % 3 === 0) mForward += this.neurons[i].output;
+                    else if (i % 3 === 1) mTurn += this.neurons[i].output;
+                    else mLift += this.neurons[i].output;
                 }
 
                 return {
-                    forward: 0.15 + (motorForward * 0.05), // Kecepatan maju lalat asli
-                    turn: (motorTurn - 2.0) * 0.05,
-                    lift: (motorLift - 2.0) * 0.025
+                    forward: 0.18 + (mForward * 0.04), // Konsisten maju ke depan
+                    turn: (mTurn - 1.2) * 0.035,        // Belok natural kanan/kiri
+                    lift: (mLift - 1.2) * 0.02          // Naik turun halus
                 };
             }
         }
 
-        const brain = new MassiveFlyBrain(1000, 899);
+        const brain = new StableFlyBrain(1000, 899);
 
-        // 4. KONTROL JOYSTICK & POSISI TERBANG
+        // 4. POSISI & KONTROL JOYSTICK
         let flyPos = new THREE.Vector3(0, 3, 0);
         let flyRotY = 0;
         let cameraAngleX = 0, cameraAngleY = 0;
-        let smoothTurn = 0, smoothLift = 0, smoothForward = 0.15;
+        let smoothTurn = 0, smoothLift = 0, smoothForward = 0.18;
 
         let joystickMove = { x: 0, y: 0 };
         const stick = document.getElementById('joystick-stick');
@@ -221,25 +219,33 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            // Dorongan internal konstan (simulasi rasa ingin mencari makan / menjelajah)
-            let hunger = 0.9 + Math.random() * 0.5;
-            let motor = brain.step(hunger);
+            // Deteksi batas kebun untuk refleks menghindar (mencegah muter di tempat)
+            let distFromCenter = Math.sqrt(flyPos.x * flyPos.x + flyPos.z * flyPos.z);
+            let obstacleSignal = distFromCenter > 38 ? 1.5 : 0.1;
 
-            // Penhalusan gerakan (mencegah getar / puyeng, membuat gaya terbang mulus)
-            smoothForward = THREE.MathUtils.lerp(smoothForward, motor.forward, 0.1);
-            smoothTurn = THREE.MathUtils.lerp(smoothTurn, motor.turn + (Math.random() - 0.5) * 0.03, 0.1);
-            smoothLift = THREE.MathUtils.lerp(smoothLift, motor.lift + (Math.random() - 0.5) * 0.02, 0.1);
+            let brainOutput = brain.step({
+                forwardDrive: 0.8 + Math.sin(Date.now() * 0.001) * 0.3,
+                obstacle: obstacleSignal
+            });
 
-            flyRotY += smoothTurn;
-            // Lalat meluncur maju dinamis
+            // Penghalusan gerakan agar perpindahan maju, belok, dan naik-turun terasa organik
+            smoothForward = THREE.MathUtils.lerp(smoothForward, brainOutput.forward, 0.1);
+            smoothTurn = THREE.MathUtils.lerp(smoothTurn, brainOutput.turn, 0.1);
+            smoothLift = THREE.MathUtils.lerp(smoothLift, brainOutput.lift, 0.1);
+
+            // Jika mendekati batas pinggir kebun, arahkan otomatis kembali ke dalam
+            if (distFromCenter > 42) {
+                let angleToCenter = Math.atan2(-flyPos.x, -flyPos.z);
+                flyRotY = THREE.MathUtils.lerp(flyRotY, angleToCenter, 0.05);
+            } else {
+                flyRotY += smoothTurn;
+            }
+
+            // Pergerakan koordinat lalat (Maju lurus, belok, dan naik-turun)
             flyPos.x -= Math.sin(flyRotY) * smoothForward;
             flyPos.z -= Math.cos(flyRotY) * smoothForward;
             flyPos.y += smoothLift;
-
-            // Batasi area kebun dengan otomatis membelokkan arah lalat jika hampir keluar batas
-            if (Math.abs(flyPos.x) > 45) flyRotY += 0.08;
-            if (Math.abs(flyPos.z) > 45) flyRotY += 0.08;
-            flyPos.y = Math.max(1, Math.min(10, flyPos.y));
+            flyPos.y = Math.max(1.2, Math.min(9.5, flyPos.y)); // Batasi ketinggian terbang
 
             flyGroup.position.copy(flyPos);
             flyGroup.rotation.y = flyRotY;
