@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Fixed Connectome Fly - 1000 Neuron SNN</title>
+    <title>Fixed Connectome Fly - Stable Movement</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -46,8 +46,8 @@
 
     <div id="ui">
         <h2>🪰 Fixed Connectome Fly</h2>
-        <p>Jaringan Otak: 1.000 Neuron & 899 Koneksi</p>
-        <p>Status: Gerak Lurus & Mata Majemuk Aktif</p>
+        <p>Jaringan Otak: 1.000 Neuron (Stabil)</p>
+        <p>Status: Navigasi Halus & Anti-Muter</p>
         <p>Kontrol: Gunakan Joystick di Kiri</p>
     </div>
 
@@ -124,15 +124,15 @@
             flyGroup.add(customModel);
         });
 
-        // 3. OTAK SNN: 1.000 NEURON & 899 KONEKSI (Anti-Muter)
-        class FixedFlyBrain {
+        // 3. OTAK SNN: STABIL & TIDAK TERLALU SENSITIF
+        class StableFlyBrain {
             constructor(numNeurons = 1000, numConnections = 899) {
                 this.neurons = [];
                 for (let i = 0; i < numNeurons; i++) {
                     this.neurons.push({
-                        voltage: Math.random() * 0.2,
-                        threshold: 1.0 + Math.random() * 0.3,
-                        leak: 0.85,
+                        voltage: Math.random() * 0.1,
+                        threshold: 1.5 + Math.random() * 0.5, // Ambang batas dinaikin agar tidak gampang "kaget"
+                        leak: 0.75,                           // Kebocoran cepat biar sinyal gak numpuk
                         output: 0
                     });
                 }
@@ -142,17 +142,16 @@
                     this.synapses.push({
                         from: Math.floor(Math.random() * numNeurons),
                         to: Math.floor(Math.random() * numNeurons),
-                        weight: (Math.random() - 0.5) * 0.25 // Bobot lebih stabil agar tidak muter liar
+                        weight: (Math.random() - 0.5) * 0.08  // Bobot sangat kecil agar stabil
                     });
                 }
             }
 
             step(leftEye, rightEye) {
-                // Input sensorik mata
-                this.neurons[0].voltage += leftEye * 1.5;
-                this.neurons[1].voltage += rightEye * 1.5;
-                // Dorongan maju konstan (mencegah macet/diam)
-                this.neurons[2].voltage += 1.0;
+                // Input sensorik mata dibuat sangat tumpul/lembut
+                this.neurons[0].voltage += leftEye * 0.4;
+                this.neurons[1].voltage += rightEye * 0.4;
+                this.neurons[2].voltage += 1.5; // Dorongan maju konstan yang kuat
 
                 for (let s of this.synapses) {
                     if (this.neurons[s.from].output > 0) {
@@ -178,14 +177,14 @@
                 }
 
                 return {
-                    forward: 0.22 + (motorForward * 0.03), // Dipastikan laju majunya kuat
-                    turn: (motorTurn * 0.015),             // Putaran diperhalus agar tidak muter-muter
-                    lift: (motorLift - 1.0) * 0.015
+                    forward: 0.22 + (motorForward * 0.01),
+                    turn: (motorTurn * 0.002), // Putaran SNN ditekan seminimal mungkin
+                    lift: (motorLift - 1.0) * 0.005
                 };
             }
         }
 
-        const brain = new FixedFlyBrain(1000, 899);
+        const brain = new StableFlyBrain(1000, 899);
 
         // 4. POSISI & KONTROL JOYSTICK
         let flyPos = new THREE.Vector3(0, 3, 0);
@@ -215,42 +214,42 @@
             joystickMove.x = 0; joystickMove.y = 0;
         });
 
-        // 5. LOOP UTAMA ANIMASI
+        // 5. LOOP UTAMA ANIMASI (ANTI-MUTER & JALAN MULUS)
         function animate() {
             requestAnimationFrame(animate);
 
-            // Deteksi Mata Majemuk Kiri & Kanan terhadap pohon terdekat
-            let leftEyeVal = 0.1, rightEyeVal = 0.1;
+            // Deteksi Mata Majemuk (Dibuat tumpul agar tidak over-reaksi)
+            let leftEyeVal = 0.01, rightEyeVal = 0.01;
             trees.forEach(tree => {
                 let dist = flyPos.distanceTo(tree.position);
-                if (dist < 12) {
-                    // Cek posisi pohon relative ke arah hadap lalat
+                if (dist < 7) { // Jarak deteksi diperkecil agar tidak gampang panik
                     let dirToTree = new THREE.Vector3().subVectors(tree.position, flyPos).normalize();
                     let flyDir = new THREE.Vector3(Math.sin(flyRotY), 0, Math.cos(flyRotY));
                     let cross = flyDir.cross(dirToTree).y;
                     
-                    if (cross > 0) rightEyeVal += (12 - dist) * 0.15; // Ada halangan di kanan
-                    else leftEyeVal += (12 - dist) * 0.15;           // Ada halangan di kiri
+                    if (cross > 0) rightEyeVal += (7 - dist) * 0.05; 
+                    else leftEyeVal += (7 - dist) * 0.05;           
                 }
             });
 
-            // Batas pinggir lapangan kebun
-            if (flyPos.x > 40) leftEyeVal += 1.5;
-            if (flyPos.x < -40) rightEyeVal += 1.5;
-            if (flyPos.z > 40) rightEyeVal += 1.5;
-            if (flyPos.z < -40) leftEyeVal += 1.5;
+            // Batas pinggir lapangan (Belok perlahan, anti-stuck)
+            if (flyPos.x > 40) { leftEyeVal += 0.5; flyRotY -= 0.02; }
+            if (flyPos.x < -40) { rightEyeVal += 0.5; flyRotY += 0.02; }
+            if (flyPos.z > 40) { leftEyeVal += 0.5; flyRotY -= 0.02; }
+            if (flyPos.z < -40) { rightEyeVal += 0.5; flyRotY += 0.02; }
 
             let brainOut = brain.step(leftEyeVal, rightEyeVal);
 
-            // Koreksi total arah putaran biar lalatnya nurut jalan lurus
-            let steeringCorrection = (rightEyeVal - leftEyeVal) * 0.04;
+            // Koreksi kemudi sangat halus (Mencegah efek berputar di tempat)
+            let steeringCorrection = (rightEyeVal - leftEyeVal) * 0.01;
 
-            smoothForward = THREE.MathUtils.lerp(smoothForward, brainOut.forward, 0.1);
-            smoothTurn = THREE.MathUtils.lerp(smoothTurn, brainOut.turn + steeringCorrection, 0.1);
-            smoothLift = THREE.MathUtils.lerp(smoothLift, brainOut.lift, 0.1);
+            smoothForward = THREE.MathUtils.lerp(smoothForward, brainOut.forward, 0.05);
+            smoothTurn = THREE.MathUtils.lerp(smoothTurn, brainOut.turn + steeringCorrection, 0.04);
+            smoothLift = THREE.MathUtils.lerp(smoothLift, brainOut.lift, 0.05);
 
             flyRotY += smoothTurn;
-            // Rumus koordinat gerak lurus maju yang akurat (tidak muter-muter lagi)
+            
+            // Gerak maju lurus yang stabil
             flyPos.x += Math.sin(flyRotY) * smoothForward;
             flyPos.z += Math.cos(flyRotY) * smoothForward;
             flyPos.y += smoothLift;
