@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>The Amazing Digital Fly - Solid Trees</title>
+    <title>The Amazing Digital Fly - Solid Map Boundary</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -83,9 +83,10 @@
         ground.rotation.x = -Math.PI / 2;
         scene.add(ground);
 
+        // Pagar / Batas Map
         const fenceGroup = new THREE.Group();
         const fenceMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.8 });
-        const mapSize = 50;
+        const mapSize = 48; // Batas koordinat map
         
         for (let i = -mapSize; i <= mapSize; i += 6) {
             let p1 = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), fenceMat); p1.position.set(i, 1, mapSize);
@@ -97,18 +98,20 @@
         }
         scene.add(fenceGroup);
 
-        const trees = [];
-        for (let i = 0; i < 18; i++) {
-            const tree = new THREE.Mesh(
-                new THREE.ConeGeometry(2.5, 7, 5),
-                new THREE.MeshStandardMaterial({ color: 0x234e30 })
+        // Pohon-pohon rintangan di dalam map (bentuk silinder biar aman)
+        const obstacles = [];
+        const obstacleMat = new THREE.MeshStandardMaterial({ color: 0x234e30, roughness: 0.8 });
+        for (let i = 0; i < 15; i++) {
+            const obs = new THREE.Mesh(
+                new THREE.CylinderGeometry(1.8, 1.8, 7, 12),
+                obstacleMat
             );
-            let x = (Math.random() - 0.5) * 80;
-            let z = (Math.random() - 0.5) * 80;
-            if (Math.abs(x) > 12 || Math.abs(z) > 12) {
-                tree.position.set(x, 3.5, z);
-                scene.add(tree);
-                trees.push(tree);
+            let x = (Math.random() - 0.5) * 70;
+            let z = (Math.random() - 0.5) * 70;
+            if (Math.abs(x) > 10 || Math.abs(z) > 10) {
+                obs.position.set(x, 3.5, z);
+                scene.add(obs);
+                obstacles.push(obs);
             }
         }
 
@@ -137,7 +140,7 @@
                 this.energy++;
                 let turn = (eyeRight - eyeLeft) * 0.12;
                 if (eyeFront > 0.2) {
-                    turn += (Math.random() > 0.5 ? 0.6 : -0.6);
+                    turn += (Math.random() > 0.5 ? 0.8 : -0.8);
                 } else {
                     turn += (Math.random() - 0.5) * 0.05;
                 }
@@ -215,7 +218,7 @@
             requestAnimationFrame(animate);
 
             if (flightState === 'FLYING') {
-                statusTextEl.innerText = "Terbang & Menyusur Objek";
+                statusTextEl.innerText = "Terbang & Batas Map Aman";
                 statusTextEl.style.color = "#4CAF50";
 
                 instinctTimer++;
@@ -224,7 +227,6 @@
                 let flyPos = new THREE.Vector3(posX, posY, posZ);
                 let flyDir = new THREE.Vector3(-Math.sin(rotY), 0, -Math.cos(rotY));
 
-                // Hitung langkah gerakan dasar dari otak SNN
                 let brainOut = brain.step(eyeLeft, eyeFront, eyeRight);
                 activeCounterEl.innerText = brainOut.activeNeurons.toLocaleString();
 
@@ -234,49 +236,44 @@
 
                 rotY += smoothTurn;
                 
-                // Prediksi posisi baru (uji coba posisi X dan Z)
                 let nextX = posX - Math.sin(rotY) * smoothForward;
                 let nextZ = posZ - Math.cos(rotY) * smoothForward;
 
-                // --- SISTEM POHON SEBAGAI BENDA PADET (SOLID OBJECT) ---
-                const solidRadius = 2.1; // Jari-jari fisik padat pohon
-                trees.forEach(tree => {
-                    let dx = nextX - tree.position.x;
-                    let dz = nextZ - tree.position.z;
+                // --- DETEKSI TABRAKAN DENGAN POHON DI DALAM MAP ---
+                const solidRadius = 2.2;
+                obstacles.forEach(obs => {
+                    let dx = nextX - obs.position.x;
+                    let dz = nextZ - obs.position.z;
                     let distXZ = Math.sqrt(dx * dx + dz * dz);
 
-                    // Jika posisi berikutnya menabrak volume padat pohon, geser posisinya di permukaan luar
                     if (distXZ < solidRadius) {
-                        let angleToFly = Math.atan2(dz, dx);
-                        // Paksa posisi lalat menempel di batas luar keliling pohon (sliding/geser mulus)
-                        nextX = tree.position.x + Math.cos(angleToFly) * solidRadius;
-                        nextZ = tree.position.z + Math.sin(angleToFly) * solidRadius;
-                        
-                        // Otak lalat mendadak belok menghindar agar tidak mandeg
-                        rotY += 0.25; 
+                        let pushAngle = Math.atan2(dz, dx);
+                        nextX = obs.position.x + Math.cos(pushAngle) * solidRadius;
+                        nextZ = obs.position.z + Math.sin(pushAngle) * solidRadius;
+                        rotY += 0.4;
                     }
 
-                    // Sensor penglihatan lalat ke pohon terdekat
-                    let distLook = flyPos.distanceTo(new THREE.Vector3(tree.position.x, posY, tree.position.z));
+                    let distLook = flyPos.distanceTo(new THREE.Vector3(obs.position.x, posY, obs.position.z));
                     if (distLook < 9) {
-                        let dirToTree = new THREE.Vector3().subVectors(tree.position, flyPos).normalize();
-                        let cross = flyDir.clone().cross(dirToTree).y;
-                        let dot = flyDir.clone().dot(dirToTree);
+                        let dirToObs = new THREE.Vector3().subVectors(obs.position, flyPos).normalize();
+                        let cross = flyDir.clone().cross(dirToObs).y;
+                        let dot = flyDir.clone().dot(dirToObs);
                         if (dot > 0.05) eyeFront += (9 - distLook) * 0.5;
                         if (cross > 0) eyeRight += (9 - distLook) * 0.5;
                         else eyeLeft += (9 - distLook) * 0.5;
                     }
                 });
 
+                // --- SISTEM BATAS MAP (BOUNDARY WALLS) ANTI-NYANGKUT ---
+                const mapLimit = 45; // Batas aman sebelum menyentuh pagar
+                if (nextX > mapLimit) { nextX = mapLimit; rotY += 1.2; } // Langsung putar arah otomatis
+                if (nextX < -mapLimit) { nextX = -mapLimit; rotY += 1.2; }
+                if (nextZ > mapLimit) { nextZ = mapLimit; rotY += 1.2; }
+                if (nextZ < -mapLimit) { nextZ = -mapLimit; rotY += 1.2; }
+
                 posX = nextX;
                 posZ = nextZ;
                 posY += brainOut.lift;
-
-                const limit = 46;
-                if (posX > limit) { posX = limit; rotY += 0.5; }
-                if (posX < -limit) { posX = -limit; rotY -= 0.5; }
-                if (posZ > limit) { posZ = limit; rotY += 0.5; }
-                if (posZ < -limit) { posZ = -limit; rotY -= 0.5; }
 
                 if (posY <= 0.15) posY = 0.15;
                 if (posY >= 7.5) posY = 7.5;
@@ -336,5 +333,5 @@
         });
     </script>
 </body>
-</html>
-    
+        </html>
+        
