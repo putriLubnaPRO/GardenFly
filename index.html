@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>The Amazing Digital Fly - Custom Joystick</title>
+    <title>The Amazing Digital Fly - 40K Synapse Connections</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -14,11 +14,12 @@
             position: absolute; top: 15px; left: 15px; color: white;
             background: rgba(0,0,0,0.75); padding: 12px 16px; border-radius: 10px; font-size: 13px;
             z-index: 5; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.3);
-            pointer-events: none; min-width: 260px;
+            pointer-events: none; min-width: 280px;
         }
         #info h3 { margin: 0 0 5px 0; color: #a8ffb2; font-size: 15px; }
         #info p { margin: 3px 0; }
         .neuron-glow { color: #ffeb3b; font-weight: bold; }
+        .synapse-glow { color: #ff4081; font-weight: bold; }
 
         #ad-box {
             position: absolute; bottom: 15px; right: 15px; width: 280px; height: 90px;
@@ -35,7 +36,7 @@
         }
         #joystick-stick {
             position: absolute; top: 35px; left: 35px; width: 50px; height: 50px;
-            background: linear-gradient(135deg, #FF9800, #E65100); border-radius: 50%; pointer-events: none;
+            background: linear-gradient(135deg, #00BCD4, #009688); border-radius: 50%; pointer-events: none;
             box-shadow: 0 4px 10px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.6);
         }
     </style>
@@ -45,9 +46,9 @@
     <div id="info">
         <h3>🪰 The Amazing Digital Fly</h3>
         <p>Total SNN: <span class="neuron-glow">19.000</span> Neuron</p>
-        <p>Koneksi Sinapsis: <span class="neuron-glow">40.000</span></p>
+        <p>Koneksi Sinapsis: <span class="synapse-glow">40.000 (3D Web Active)</span></p>
         <p>Neuron Menyala: <span id="active-neuron-counter" class="neuron-glow">13.900</span> / 19K</p>
-        <p>Status: <span id="fly-status-text" style="color: #4CAF50;">Kontrol Joystick Aktif</span></p>
+        <p>Status Otak: <span id="fly-status-text" style="color: #4CAF50;">Terbang Otonom</span></p>
     </div>
 
     <div id="ad-box">
@@ -136,6 +137,22 @@
         const flyGroup = new THREE.Group();
         scene.add(flyGroup);
 
+        // --- 40.000 KONEKSI SINAPSIS (VISUAL 3D NEURON WEB DI KEPALA LALAT) ---
+        const synapseCount = 800; // Garis partikel efisien untuk mewakili keratan 40k sinapsis
+        const synapseGeo = new THREE.BufferGeometry();
+        const synapsePositions = new Float32Array(synapseCount * 6); // 2 titik per garis sinapsis
+        
+        for(let i = 0; i < synapseCount * 6; i += 3) {
+            // Membentuk bola kecil di area kepala lalat
+            synapsePositions[i] = (Math.random() - 0.5) * 0.4;
+            synapsePositions[i+1] = 0.2 + (Math.random() - 0.5) * 0.4;
+            synapsePositions[i+2] = -0.1 + (Math.random() - 0.5) * 0.4;
+        }
+        synapseGeo.setAttribute('position', new THREE.BufferAttribute(synapsePositions, 3));
+        const synapseMat = new THREE.LineBasicMaterial({ color: 0xff4081, transparent: true, opacity: 0.7 });
+        const synapseWeb = new THREE.LineSegments(synapseGeo, synapseMat);
+        flyGroup.add(synapseWeb);
+
         const fallbackFly = new THREE.Group();
         const body = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), new THREE.MeshStandardMaterial({ color: 0x222 }));
         fallbackFly.add(body);
@@ -150,11 +167,56 @@
             flyGroup.add(customModel);
         });
 
-        // --- POSISI & VARIABEL KONTROL ---
+        // --- GARIS LASER MATA MAJEMUK ---
+        const rayLineMat = new THREE.LineBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.6 });
+        const rayGeometry = new THREE.BufferGeometry();
+        const rayPositions = new Float32Array(6);
+        rayGeometry.setAttribute('position', new THREE.BufferAttribute(rayPositions, 3));
+        const eyeRayLine = new THREE.Line(rayGeometry, rayLineMat);
+        scene.add(eyeRayLine);
+
+        // --- OTAK SNN & MATA MAJEMUK ---
+        class SNNFlyBrain {
+            constructor() { this.time = 0; }
+            step(eyeLeft, eyeFront, eyeRight) {
+                this.time++;
+                let turn = 0;
+                let statusText = "Terbang Lurus Alami";
+                let statusColor = "#4CAF50";
+                let activeNeurons = 13800;
+
+                if (eyeFront > 0.3) {
+                    turn += (eyeRight > eyeLeft ? -0.04 : 0.04);
+                    statusText = "⚡ Sinapsis Aktif: Menghindar Darurat";
+                    statusColor = "#FF5722";
+                    activeNeurons += 3200;
+                } else if (eyeFront > 0.12 || eyeLeft > 0.25 || eyeRight > 0.25) {
+                    turn += (eyeRight - eyeLeft) * 0.05;
+                    statusText = "Sinapsis Aktif: Belok Halus Objek";
+                    statusColor = "#FFEB3B";
+                    activeNeurons += 1500;
+                } else {
+                    turn += Math.sin(this.time * 0.04) * 0.015;
+                    activeNeurons += Math.floor(Math.sin(this.time * 0.08) * 400);
+                }
+
+                turn = Math.max(-0.06, Math.min(0.06, turn));
+                let forward = 0.11;
+                let lift = Math.sin(this.time * 0.06) * 0.008;
+
+                return { forward, turn, lift, activeNeurons, text: statusText, color: statusColor };
+            }
+        }
+
+        const brain = new SNNFlyBrain();
+
         let posX = 0, posY = 2.0, posZ = 0;
         let rotY = 0, rotX = 0, rotZ = 0;
         let smoothTurn = 0;
-        let camSmoothX = 0, camSmoothY = 2.0, camSmoothZ = 0;
+
+        let camAngleOffsetH = 0;
+        let camAngleOffsetV = 0;
+        let camDist = 4.5;
 
         let joystickMove = { x: 0, y: 0 };
         const stick = document.getElementById('joystick-stick');
@@ -162,7 +224,6 @@
         const activeCounterEl = document.getElementById('active-neuron-counter');
         const statusTextEl = document.getElementById('fly-status-text');
 
-        // --- SETUP JOYSTICK TOUCH & MOUSE ---
         function updateJoystick(clientX, clientY) {
             const rect = base.getBoundingClientRect();
             let x = clientX - (rect.left + rect.width / 2);
@@ -172,7 +233,7 @@
             if (dist > maxDist) { x = (x / dist) * maxDist; y = (y / dist) * maxDist; }
             stick.style.transform = `translate(${x}px, ${y}px)`;
             joystickMove.x = x / maxDist; 
-            joystickMove.y = y / maxDist; // Atas/Bawah
+            joystickMove.y = y / maxDist; 
         }
 
         base.addEventListener('touchmove', (e) => {
@@ -199,26 +260,73 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            // Kontrol arah dari Joystick (Kiri/Kanan untuk belok, Atas/Bawah untuk naik/turun)
-            let targetTurn = -joystickMove.x * 0.05;
-            let targetLift = -joystickMove.y * 0.04;
-            let forwardSpeed = 0.11 + (joystickMove.y < 0 ? Math.abs(joystickMove.y) * 0.05 : 0);
+            let flyPos = new THREE.Vector3(posX, posY, posZ);
+            let flyDir = new THREE.Vector3(-Math.sin(rotY), 0, -Math.cos(rotY));
 
-            smoothTurn = THREE.MathUtils.lerp(smoothTurn, targetTurn, 0.1);
+            let eyeLeft = 0.0, eyeFront = 0.0, eyeRight = 0.0;
+            let lookRange = 4.0;
+            let closestObsPos = null;
+            let minObsDist = 999;
+
+            obstacles.forEach(obs => {
+                let obsPos = new THREE.Vector3(obs.position.x, posY, obs.position.z);
+                let distLook = flyPos.distanceTo(obsPos);
+                
+                if (distLook < lookRange) {
+                    if (distLook < minObsDist) {
+                        minObsDist = distLook;
+                        closestObsPos = obsPos;
+                    }
+                    let dirToObs = new THREE.Vector3().subVectors(obsPos, flyPos).normalize();
+                    let cross = flyDir.clone().cross(dirToObs).y;
+                    let dot = flyDir.clone().dot(dirToObs);
+                    
+                    if (dot > 0.1) eyeFront += (lookRange - distLook) * 0.15;
+                    if (cross > 0) eyeRight += (lookRange - distLook) * 0.15;
+                    else eyeLeft += (lookRange - distLook) * 0.15;
+                }
+            });
+
+            // Efek Kedap-kedip Sinyal Sinapsis (40K Connections Pulsing)
+            const posAttrSyn = synapseGeo.attributes.position;
+            for(let i = 1; i < posAttrSyn.count; i += 2) {
+                posAttrSyn.setY(i, 0.2 + Math.sin(Date.now() * 0.01 + i) * 0.15);
+            }
+            posAttrSyn.needsUpdate = true;
+
+            if (closestObsPos) {
+                const posAttr = eyeRayLine.geometry.attributes.position;
+                posAttr.setXYZ(0, posX, posY, posZ);
+                posAttr.setXYZ(1, closestObsPos.x, closestObsPos.y, closestObsPos.z);
+                posAttr.needsUpdate = true;
+                eyeRayLine.visible = true;
+            } else {
+                eyeRayLine.visible = false;
+            }
+
+            const mapWarning = 5.0;
+            if (posX > (mapSize - mapWarning)) eyeRight += (mapSize - posX) * 0.15;
+            if (posX < (-mapSize + mapWarning)) eyeLeft += (posX - (-mapSize)) * 0.15;
+            if (posZ > (mapSize - mapWarning)) eyeFront += (mapSize - posZ) * 0.15;
+            if (posZ < (-mapSize + mapWarning)) eyeFront += (posZ - (-mapSize)) * 0.15;
+
+            let brainOut = brain.step(eyeLeft, eyeFront, eyeRight);
+            activeCounterEl.innerText = brainOut.activeNeurons.toLocaleString();
+            statusTextEl.innerText = brainOut.text;
+            statusTextEl.style.color = brainOut.color;
+
+            smoothTurn = THREE.MathUtils.lerp(smoothTurn, brainOut.turn, 0.08);
             rotY += smoothTurn;
 
-            let flyPos = new THREE.Vector3(posX, posY, posZ);
-            let nextX = posX - Math.sin(rotY) * forwardSpeed;
-            let nextZ = posZ - Math.cos(rotY) * forwardSpeed;
+            let nextX = posX - Math.sin(rotY) * brainOut.forward;
+            let nextZ = posZ - Math.cos(rotY) * brainOut.forward;
 
-            // Batas Keras Map Kaca (Tanpa Getar/Mantul)
             const mapLimit = 39.5;
-            if (nextX > mapLimit) nextX = mapLimit;
-            if (nextX < -mapLimit) nextX = -mapLimit;
-            if (nextZ > mapLimit) nextZ = mapLimit;
-            if (nextZ < -mapLimit) nextZ = -mapLimit;
+            if (nextX > mapLimit) { nextX = mapLimit; rotY += 0.02; }
+            if (nextX < -mapLimit) { nextX = -mapLimit; rotY += 0.02; }
+            if (nextZ > mapLimit) { nextZ = mapLimit; rotY += 0.02; }
+            if (nextZ < -mapLimit) { nextZ = -mapLimit; rotY += 0.02; }
 
-            // Batas Aman Pohon (Nempel Halus Tanpa Getar)
             const solidRadius = 1.0;
             obstacles.forEach(obs => {
                 let dx = nextX - obs.position.x;
@@ -233,39 +341,27 @@
 
             posX = nextX;
             posZ = nextZ;
-            posY += targetLift;
+            posY += brainOut.lift;
             if (posY < 1.2) posY = 1.2;
-            if (posY > 4.0) posY = 4.0;
+            if (posY > 4.0) posY > 4.0;
 
-            rotZ = THREE.MathUtils.lerp(rotZ, -smoothTurn * 1.2, 0.1);
-            rotX = THREE.MathUtils.lerp(rotX, targetLift * 1.5, 0.1);
+            rotZ = THREE.MathUtils.lerp(rotZ, -smoothTurn * 0.8, 0.1);
 
             flyGroup.position.set(posX, posY, posZ);
             flyGroup.rotation.y = rotY;
             flyGroup.rotation.x = rotX;
             flyGroup.rotation.z = rotZ;
 
-            // Status teks
-            if (Math.abs(joystickMove.x) > 0.1 || Math.abs(joystickMove.y) > 0.1) {
-                statusTextEl.innerText = "Manual Joystick Aktif";
-                statusTextEl.style.color = "#FFEB3B";
-            } else {
-                statusTextEl.innerText = "Terbang Tenang";
-                statusTextEl.style.color = "#4CAF50";
-            }
-            activeCounterEl.innerText = (13800 + Math.floor(Math.random() * 400)).toLocaleString();
+            camAngleOffsetH += joystickMove.x * 0.03;
+            camAngleOffsetV = THREE.MathUtils.lerp(camAngleOffsetV, -joystickMove.y * 2.0, 0.1);
 
-            // Kamera Mengikuti Mulus dari Belakang
-            let targetCamX = posX + Math.sin(rotY) * 4.5;
-            let targetCamZ = posZ + Math.cos(rotY) * 4.5;
-            let targetCamY = posY + 1.2;
+            let totalCamAngle = rotY + Math.PI + camAngleOffsetH;
+            let targetCamX = posX + Math.sin(totalCamAngle) * camDist;
+            let targetCamZ = posZ + Math.cos(totalCamAngle) * camDist;
+            let targetCamY = posY + 1.2 + camAngleOffsetV;
 
-            camSmoothX = THREE.MathUtils.lerp(camSmoothX, targetCamX, 0.08);
-            camSmoothY = THREE.MathUtils.lerp(camSmoothY, targetCamY, 0.08);
-            camSmoothZ = THREE.MathUtils.lerp(camSmoothZ, targetCamZ, 0.08);
-
-            camera.position.set(camSmoothX, camSmoothY, camSmoothZ);
-            camera.lookAt(posX, posY, posZ);
+            camera.position.set(targetCamX, targetCamY, targetCamZ);
+            camera.lookAt(posX, posY + 0.2, posZ);
 
             renderer.render(scene, camera);
         }
@@ -279,4 +375,5 @@
         });
     </script>
 </body>
-</html>
+    </html>
+    
