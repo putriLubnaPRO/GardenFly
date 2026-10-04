@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>The Amazing Digital Fly - Balanced SNN</title>
+    <title>The Amazing Digital Fly - Relaxed SNN</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -46,21 +46,12 @@
         <h3>🪰 The Amazing Digital Fly</h3>
         <p>Total SNN: <span class="neuron-glow">19.000</span> Neuron</p>
         <p>Koneksi Sinapsis: <span class="neuron-glow">40.000</span></p>
-        <p>Neuron Menyala: <span id="active-neuron-counter" class="neuron-glow">14.500</span> / 19K</p>
-        <p>Insting: <span id="fly-status-text" style="color: #4CAF50;">Terbang Santai & Natural</span></p>
+        <p>Neuron Menyala: <span id="active-neuron-counter" class="neuron-glow">13.900</span> / 19K</p>
+        <p>Insting: <span id="fly-status-text" style="color: #4CAF50;">Terbang Super Santai</span></p>
     </div>
 
     <div id="ad-box">
-        <script>
-  atOptions = {
-    'key' : '1906564690a0b056148af87aadb9bbd4',
-    'format' : 'iframe',
-    'height' : 90,
-    'width' : 728,
-    'params' : {}
-  };
-</script>
-<script src="https://www.highrevenueformat.com/1906564690a0b056148af87aadb9bbd4/invoke.js"></script>
+        [ Tempat Iklan Adsterra / AdSense ]
     </div>
 
     <div id="joystick-base">
@@ -159,31 +150,31 @@
             flyGroup.add(customModel);
         });
 
-        // --- OTAK SNN SEIMBANG (Tidak Terlalu Sensitif) ---
-        class BalancedFlyBrain {
+        // --- OTAK SNN SUPER SANTAI (Sensitivitas Diturunkan Jauh) ---
+        class RelaxedFlyBrain {
             constructor() {
                 this.energy = 0;
             }
             step(eyeLeft, eyeFront, eyeRight) {
                 this.energy++;
                 
-                // Bobot belok dibuat lebih moderat agar tidak kaget-kagetan
-                let turn = (eyeRight - eyeLeft) * 0.18; 
+                // Bobot belok sangat kecil agar gerakannya mengalir mulus
+                let turn = (eyeRight - eyeLeft) * 0.08; 
                 
-                if (eyeFront > 0.3) {
-                    turn += (eyeRight > eyeLeft ? 0.45 : -0.45);
+                if (eyeFront > 0.4) {
+                    turn += (eyeRight > eyeLeft ? 0.25 : -0.25);
                 } else {
-                    turn += (Math.random() - 0.5) * 0.06;
+                    turn += (Math.random() - 0.5) * 0.04;
                 }
                 
-                let forward = 0.16 + Math.random() * 0.02;
-                let lift = (Math.random() - 0.48) * 0.012;
-                let activeNeurons = Math.floor(14000 + Math.sin(this.energy * 0.1) * 1800 + Math.random() * 800);
+                let forward = 0.15 + Math.random() * 0.015;
+                let lift = (Math.random() - 0.48) * 0.01;
+                let activeNeurons = Math.floor(13500 + Math.sin(this.energy * 0.08) * 1500 + Math.random() * 600);
                 return { forward, turn, lift, activeNeurons };
             }
         }
 
-        const brain = new BalancedFlyBrain();
+        const brain = new RelaxedFlyBrain();
 
         let posX = 0, posY = 2.0, posZ = 0;
         let rotY = 0, rotX = 0, rotZ = 0;
@@ -191,7 +182,7 @@
         let instinctTimer = 0;
 
         let cameraAngleX = 0, cameraAngleY = 0;
-        let smoothTurn = 0, smoothForward = 0.16;
+        let smoothTurn = 0, smoothForward = 0.15;
 
         const activeCounterEl = document.getElementById('active-neuron-counter');
         const statusTextEl = document.getElementById('fly-status-text');
@@ -205,7 +196,7 @@
                 flightState = 'FLYING';
                 instinctTimer = 0;
                 posY += 0.8;
-                rotY += (Math.random() - 0.5) * 1.2;
+                rotY += (Math.random() - 0.5) * 1.0;
             }
         }
 
@@ -250,7 +241,7 @@
             requestAnimationFrame(animate);
 
             if (flightState === 'FLYING') {
-                statusTextEl.innerText = "Terbang Santai & Natural";
+                statusTextEl.innerText = "Terbang Super Santai";
                 statusTextEl.style.color = "#4CAF50";
 
                 instinctTimer++;
@@ -258,9 +249,9 @@
                 let flyPos = new THREE.Vector3(posX, posY, posZ);
                 let flyDir = new THREE.Vector3(-Math.sin(rotY), 0, -Math.cos(rotY));
 
-                // --- SENSOR MATA SEIMBANG (Jarak Pandang Moderat) ---
+                // --- SENSOR MATA SUPER SANTAI (Jarak Pandang Diperpendek) ---
                 let eyeLeft = 0.0, eyeFront = 0.0, eyeRight = 0.0;
-                let lookRange = 5.5; // Diturunkan dari 8.5 supaya tidak terlalu cepat kaget
+                let lookRange = 3.5; // Jauh lebih dekat baru dia "sadar" ada halangan, jadi gak gampang kaget
 
                 obstacles.forEach(obs => {
                     let obsPos = new THREE.Vector3(obs.position.x, posY, obs.position.z);
@@ -271,25 +262,26 @@
                         let cross = flyDir.clone().cross(dirToObs).y;
                         let dot = flyDir.clone().dot(dirToObs);
                         
-                        if (dot > 0.2) eyeFront += (lookRange - distLook) * 0.4;
-                        if (cross > 0) eyeRight += (lookRange - distLook) * 0.4;
-                        else eyeLeft += (lookRange - distLook) * 0.4;
+                        if (dot > 0.2) eyeFront += (lookRange - distLook) * 0.2;
+                        if (cross > 0) eyeRight += (lookRange - distLook) * 0.2;
+                        else eyeLeft += (lookRange - distLook) * 0.2;
                     }
                 });
 
-                // Deteksi dinding kaca batas map yang lebih pas
-                const mapWarning = 5.0;
-                if (posX > (mapSize - mapWarning)) eyeRight += (mapSize - posX) * 0.3;
-                if (posX < (-mapSize + mapWarning)) eyeLeft += (posX - (-mapSize)) * 0.3;
-                if (posZ > (mapSize - mapWarning)) eyeFront += (mapSize - posZ) * 0.3;
-                if (posZ < (-mapSize + mapWarning)) eyeFront += (posZ - (-mapSize)) * 0.3;
+                // Deteksi dinding kaca batas map diperlambat
+                const mapWarning = 3.5;
+                if (posX > (mapSize - mapWarning)) eyeRight += (mapSize - posX) * 0.15;
+                if (posX < (-mapSize + mapWarning)) eyeLeft += (posX - (-mapSize)) * 0.15;
+                if (posZ > (mapSize - mapWarning)) eyeFront += (mapSize - posZ) * 0.15;
+                if (posZ < (-mapSize + mapWarning)) eyeFront += (posZ - (-mapSize)) * 0.15;
 
                 let brainOut = brain.step(eyeLeft, eyeFront, eyeRight);
                 activeCounterEl.innerText = brainOut.activeNeurons.toLocaleString();
 
                 let targetTurn = brainOut.turn;
-                smoothTurn = THREE.MathUtils.lerp(smoothTurn, targetTurn, 0.10); // Lerp diperhalus agar belokan luwes
-                smoothForward = THREE.MathUtils.lerp(smoothForward, brainOut.forward, 0.15);
+                // Lerp sangat kecil agar belokan mengalir lembut banget (tidak patah-patah)
+                smoothTurn = THREE.MathUtils.lerp(smoothTurn, targetTurn, 0.05); 
+                smoothForward = THREE.MathUtils.lerp(smoothForward, brainOut.forward, 0.1);
 
                 rotY += smoothTurn;
                 
@@ -297,7 +289,7 @@
                 let nextZ = posZ - Math.cos(rotY) * smoothForward;
 
                 // --- TABRAKAN FISIK POHON ---
-                const solidRadius = 1.0;
+                const solidRadius = 0.9;
                 obstacles.forEach(obs => {
                     let dx = nextX - obs.position.x;
                     let dz = nextZ - obs.position.z;
@@ -307,16 +299,16 @@
                         let pushAngle = Math.atan2(dz, dx);
                         nextX = obs.position.x + Math.cos(pushAngle) * solidRadius;
                         nextZ = obs.position.z + Math.sin(pushAngle) * solidRadius;
-                        rotY += 0.4; // Menghindar santai
+                        rotY += 0.2; // Menghindar perlahan
                     }
                 });
 
                 // --- BATAS MAP KACA GELAP ---
                 const mapLimit = 43;
-                if (nextX > mapLimit) { nextX = mapLimit; rotY += 1.0; }
-                if (nextX < -mapLimit) { nextX = -mapLimit; rotY += 1.0; }
-                if (nextZ > mapLimit) { nextZ = mapLimit; rotY += 1.0; }
-                if (nextZ < -mapLimit) { nextZ = -mapLimit; rotY += 1.0; }
+                if (nextX > mapLimit) { nextX = mapLimit; rotY += 0.6; }
+                if (nextX < -mapLimit) { nextX = -mapLimit; rotY += 0.6; }
+                if (nextZ > mapLimit) { nextZ = mapLimit; rotY += 0.6; }
+                if (nextZ < -mapLimit) { nextZ = -mapLimit; rotY += 0.6; }
 
                 posX = nextX;
                 posZ = nextZ;
@@ -349,7 +341,7 @@
                     flightState = 'FLYING';
                     instinctTimer = 0;
                     posY += 0.5; 
-                    rotY += (Math.random() - 0.5) * 1.2; 
+                    rotY += (Math.random() - 0.5) * 1.0; 
                 }
             }
 
@@ -379,7 +371,5 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
     </script>
-    <script src="https://pl31655377.profitableratecpmnetwork.com/c6/d7/62/c6d7626fce1b5f1670359b8e1c8f1ff1.js"></script>
 </body>
-    </html>
-    
+</html>
