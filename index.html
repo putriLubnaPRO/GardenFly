@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>The Amazing Digital Fly - Adaptive Turning</title>
+    <title>The Amazing Digital Fly - Calm Reflex</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -27,17 +27,6 @@
             color: #333; font-size: 11px; z-index: 10; border-radius: 10px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
-
-        #joystick-base {
-            position: absolute; bottom: 30px; left: 30px; width: 120px; height: 120px;
-            background: rgba(255, 255, 255, 0.15); border: 2px solid rgba(255, 255, 255, 0.4);
-            border-radius: 50%; touch-action: none; z-index: 10; backdrop-filter: blur(3px);
-        }
-        #joystick-stick {
-            position: absolute; top: 35px; left: 35px; width: 50px; height: 50px;
-            background: linear-gradient(135deg, #FF9800, #E65100); border-radius: 50%; pointer-events: none;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.6);
-        }
     </style>
 </head>
 <body>
@@ -47,15 +36,11 @@
         <p>Total SNN: <span class="neuron-glow">19.000</span> Neuron</p>
         <p>Koneksi Sinapsis: <span class="neuron-glow">40.000</span></p>
         <p>Neuron Menyala: <span id="active-neuron-counter" class="neuron-glow">13.900</span> / 19K</p>
-        <p>Insting: <span id="fly-status-text" style="color: #4CAF50;">Belok Adaptif (Normal/Tajam)</span></p>
+        <p>Status: <span id="fly-status-text" style="color: #4CAF50;">Terbang Tenang & Natural</span></p>
     </div>
 
     <div id="ad-box">
         [ Tempat Iklan Adsterra / AdSense ]
-    </div>
-
-    <div id="joystick-base">
-        <div id="joystick-stick"></div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -84,7 +69,7 @@
         scene.add(ground);
 
         // --- DINDING PEMBATAS MAP KACA GELAP ---
-        const mapSize = 46;
+        const mapSize = 42;
         const wallHeight = 5.0;
         const glassWallMat = new THREE.MeshStandardMaterial({ 
             color: 0x333333, 
@@ -115,7 +100,7 @@
         const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 });
         const leavesMat = new THREE.MeshStandardMaterial({ color: 0x2e8b57, roughness: 0.8 });
 
-        for (let i = 0; i < 14; i++) {
+        for (let i = 0; i < 12; i++) {
             const treeGroup = new THREE.Group();
             const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.6, 3, 10), trunkMat);
             trunk.position.y = 1.5;
@@ -124,9 +109,9 @@
             leaves.position.y = 4.0;
             treeGroup.add(leaves);
 
-            let x = (Math.random() - 0.5) * 65;
-            let z = (Math.random() - 0.5) * 65;
-            if (Math.abs(x) > 10 || Math.abs(z) > 10) {
+            let x = (Math.random() - 0.5) * 55;
+            let z = (Math.random() - 0.5) * 55;
+            if (Math.abs(x) > 8 || Math.abs(z) > 8) {
                 treeGroup.position.set(x, 0, z);
                 scene.add(treeGroup);
                 obstacles.push(treeGroup);
@@ -150,247 +135,134 @@
             flyGroup.add(customModel);
         });
 
-        // --- OTAK SNN DENGAN BELOK BIASA & TAJAM ---
-        class AdaptiveFlyBrain {
+        // --- OTAK SNN TENANG (ANTI-PANIK / ANTI MUTER) ---
+        class CalmFlyBrain {
             constructor() {
                 this.time = 0;
-                this.hoverMode = false;
-                this.hoverTimer = 0;
             }
             step(eyeLeft, eyeFront, eyeRight) {
                 this.time++;
 
-                if (this.hoverTimer > 0) {
-                    this.hoverTimer--;
-                    this.hoverMode = true;
-                } else {
-                    if (Math.random() < 0.012) {
-                        this.hoverTimer = Math.floor(Math.random() * 40) + 15;
-                    } else {
-                        this.hoverMode = false;
-                    }
-                }
-
                 let turn = 0;
-                let turnModeText = "Belok Normal (Halus)";
+                let statusText = "Terbang Santai";
                 let statusColor = "#4CAF50";
 
-                // Deteksi tingkat bahaya (jarak objek dekat / darurat)
-                if (eyeFront > 0.4 || eyeLeft > 0.5 || eyeRight > 0.5) {
-                    // --- REFLEKS BELOK TAJAM (DARURAT) ---
-                    let sharpForce = 0.35;
-                    if (eyeRight > eyeLeft) {
-                        turn -= sharpForce; // Belok tajam ke kiri menjauhi kanan
-                    } else {
-                        turn += sharpForce; // Belok tajam ke kanan menjauhi kiri
-                    }
-                    turnModeText = "⚡ Belok Tajam (Refleks Darurat)";
-                    statusColor = "#FF5722";
-                } else if (eyeFront > 0.15 || eyeLeft > 0.2 || eyeRight > 0.2) {
-                    // --- BELOK BIASA (MENGHINDAR HALUS) ---
-                    turn += (eyeRight - eyeLeft) * 0.12;
-                    turnModeText = "Belok Biasa (Menghindar)";
+                // Refleks diperhalus agar tidak berlebihan
+                if (eyeFront > 0.15) {
+                    turn += (eyeRight > eyeLeft ? -0.025 : 0.025);
+                    statusText = "Menghindar Halus";
                     statusColor = "#FFEB3B";
-                } else if (this.hoverMode) {
-                    turnModeText = "Melayang (Hovering)";
-                    statusColor = "#00BCD4";
+                } else if (eyeLeft > 0.2) {
+                    turn += 0.02; 
+                    statusText = "Geser Kanan Dikit";
+                } else if (eyeRight > 0.2) {
+                    turn -= 0.02; 
+                    statusText = "Geser Kiri Dikit";
                 } else {
-                    // --- JALUR ACAK / PATTERN TERBANG NORMAL ---
-                    turn += (Math.sin(this.time * 0.08) * 0.04) + ((Math.random() - 0.5) * 0.06);
+                    // Pola gelombang terbang lurus yang sangat natural
+                    turn += Math.sin(this.time * 0.03) * 0.015;
                 }
 
-                let forward = this.hoverMode ? 0.0 : (0.13 + Math.random() * 0.05);
-                let lift = Math.sin(this.time * 0.1) * 0.01 + (Math.random() - 0.48) * 0.015;
-                let activeNeurons = Math.floor(13500 + Math.sin(this.time * 0.05) * 1500 + Math.random() * 500);
+                // Batasi nilai turn agar tidak terjadi putaran berlebih
+                turn = Math.max(-0.04, Math.min(0.04, turn));
 
-                if (turnModeText.includes("Tajam")) {
-                    activeNeurons += 3500; // Lonjakan neuron aktif saat refleks darurat!
-                }
-                
-                return { forward, turn, lift, activeNeurons, text: turnModeText, color: statusColor };
+                let forward = 0.11; 
+                let lift = Math.sin(this.time * 0.06) * 0.008;
+                let activeNeurons = Math.floor(13800 + Math.sin(this.time * 0.05) * 500);
+
+                return { forward, turn, lift, activeNeurons, text: statusText, color: statusColor };
             }
         }
 
-        const brain = new AdaptiveFlyBrain();
+        const brain = new CalmFlyBrain();
 
         let posX = 0, posY = 2.0, posZ = 0;
         let rotY = 0, rotX = 0, rotZ = 0;
-        let flightState = 'FLYING'; 
-        let instinctTimer = 0;
-
-        let smoothTurn = 0, smoothForward = 0.13;
+        let smoothTurn = 0;
         let camSmoothX = 0, camSmoothY = 2.0, camSmoothZ = 0;
 
         const activeCounterEl = document.getElementById('active-neuron-counter');
         const statusTextEl = document.getElementById('fly-status-text');
 
-        let joystickMove = { x: 0, y: 0 };
-        const stick = document.getElementById('joystick-stick');
-        const base = document.getElementById('joystick-base');
-
-        function forceFlyUp() {
-            if (flightState === 'LANDED' || flightState === 'DESCENDING_TO_LAND') {
-                flightState = 'FLYING';
-                instinctTimer = 0;
-                posY += 0.8;
-                rotY += (Math.random() - 0.5) * 0.8;
-            }
-        }
-
-        base.addEventListener('touchmove', (e) => {
-            forceFlyUp();
-            const touch = e.touches[0];
-            const rect = base.getBoundingClientRect();
-            let x = touch.clientX - (rect.left + rect.width / 2);
-            let y = touch.clientY - (rect.top + rect.height / 2);
-            const dist = Math.sqrt(x*x + y*y);
-            const maxDist = 40;
-            if (dist > maxDist) { x = (x / dist) * maxDist; y = (y / dist) * maxDist; }
-            stick.style.transform = `translate(${x}px, ${y}px)`;
-            joystickMove.x = x / maxDist; joystickMove.y = y / maxDist;
-        });
-        base.addEventListener('touchend', () => {
-            stick.style.transform = `translate(0px, 0px)`;
-            joystickMove.x = 0; joystickMove.y = 0;
-        });
-
-        let isMouseDown = false;
-        base.addEventListener('mousedown', () => { isMouseDown = true; forceFlyUp(); });
-        window.addEventListener('mousemove', (e) => {
-            if (!isMouseDown) return;
-            const rect = base.getBoundingClientRect();
-            let x = e.clientX - (rect.left + rect.width / 2);
-            let y = e.clientY - (rect.top + rect.height / 2);
-            const dist = Math.sqrt(x*x + y*y);
-            const maxDist = 40;
-            if (dist > maxDist) { x = (x / dist) * maxDist; y = (y / dist) * maxDist; }
-            stick.style.transform = `translate(${x}px, ${y}px)`;
-            joystickMove.x = x / maxDist; joystickMove.y = y / maxDist;
-        });
-        window.addEventListener('mouseup', () => {
-            if (!isMouseDown) return;
-            isMouseDown = false;
-            stick.style.transform = `translate(0px, 0px)`;
-            joystickMove.x = 0; joystickMove.y = 0;
-        });
-
         function animate() {
             requestAnimationFrame(animate);
 
-            if (flightState === 'FLYING') {
-                instinctTimer++;
+            let flyPos = new THREE.Vector3(posX, posY, posZ);
+            let flyDir = new THREE.Vector3(-Math.sin(rotY), 0, -Math.cos(rotY));
 
-                let flyPos = new THREE.Vector3(posX, posY, posZ);
-                let flyDir = new THREE.Vector3(-Math.sin(rotY), 0, -Math.cos(rotY));
+            let eyeLeft = 0.0, eyeFront = 0.0, eyeRight = 0.0;
+            let lookRange = 4.5;
 
-                let eyeLeft = 0.0, eyeFront = 0.0, eyeRight = 0.0;
-                let lookRange = 4.0;
-
-                obstacles.forEach(obs => {
-                    let obsPos = new THREE.Vector3(obs.position.x, posY, obs.position.z);
-                    let distLook = flyPos.distanceTo(obsPos);
-                    
-                    if (distLook < lookRange) {
-                        let dirToObs = new THREE.Vector3().subVectors(obsPos, flyPos).normalize();
-                        let cross = flyDir.clone().cross(dirToObs).y;
-                        let dot = flyDir.clone().dot(dirToObs);
-                        
-                        if (dot > 0.1) eyeFront += (lookRange - distLook) * 0.25;
-                        if (cross > 0) eyeRight += (lookRange - distLook) * 0.25;
-                        else eyeLeft += (lookRange - distLook) * 0.25;
-                    }
-                });
-
-                const mapWarning = 4.0;
-                if (posX > (mapSize - mapWarning)) eyeRight += (mapSize - posX) * 0.2;
-                if (posX < (-mapSize + mapWarning)) eyeLeft += (posX - (-mapSize)) * 0.2;
-                if (posZ > (mapSize - mapWarning)) eyeFront += (mapSize - posZ) * 0.2;
-                if (posZ < (-mapSize + mapWarning)) eyeFront += (posZ - (-mapSize)) * 0.2;
-
-                let brainOut = brain.step(eyeLeft, eyeFront, eyeRight);
-                activeCounterEl.innerText = brainOut.activeNeurons.toLocaleString();
-                statusTextEl.innerText = brainOut.text;
-                statusTextEl.style.color = brainOut.color;
-
-                smoothTurn = THREE.MathUtils.lerp(smoothTurn, brainOut.turn, 0.12); 
-                smoothForward = THREE.MathUtils.lerp(smoothForward, brainOut.forward, 0.15);
-
-                rotY += smoothTurn;
+            obstacles.forEach(obs => {
+                let obsPos = new THREE.Vector3(obs.position.x, posY, obs.position.z);
+                let distLook = flyPos.distanceTo(obsPos);
                 
-                let nextX = posX - Math.sin(rotY) * smoothForward;
-                let nextZ = posZ - Math.cos(rotY) * smoothForward;
-
-                // --- TABRAKAN LEMBUT TANPA GETAR ---
-                const solidRadius = 0.9;
-                obstacles.forEach(obs => {
-                    let dx = nextX - obs.position.x;
-                    let dz = nextZ - obs.position.z;
-                    let distXZ = Math.sqrt(dx * dx + dz * dz);
-
-                    if (distXZ < solidRadius) {
-                        let pushAngle = Math.atan2(dz, dx);
-                        nextX = obs.position.x + Math.cos(pushAngle) * solidRadius;
-                        nextZ = obs.position.z + Math.sin(pushAngle) * solidRadius;
-                    }
-                });
-
-                const mapLimit = 43.5;
-                if (nextX > mapLimit) { nextX = mapLimit; }
-                if (nextX < -mapLimit) { nextX = -mapLimit; }
-                if (nextZ > mapLimit) { nextZ = mapLimit; }
-                if (nextZ < -mapLimit) { nextZ = -mapLimit; }
-
-                posX = nextX;
-                posZ = nextZ;
-                posY += brainOut.lift;
-
-                if (posY <= 1.2) posY = 1.2;
-                if (posY >= 4.5) posY = 4.5;
-
-                rotZ = THREE.MathUtils.lerp(rotZ, -smoothTurn * 1.2, 0.1);
-                rotX = THREE.MathUtils.lerp(rotX, brainOut.lift * 1.5, 0.1);
-
-                if (instinctTimer > 500 && Math.random() < 0.002) {
-                    flightState = 'DESCENDING_TO_LAND';
+                if (distLook < lookRange) {
+                    let dirToObs = new THREE.Vector3().subVectors(obsPos, flyPos).normalize();
+                    let cross = flyDir.clone().cross(dirToObs).y;
+                    let dot = flyDir.clone().dot(dirToObs);
+                    
+                    if (dot > 0.1) eyeFront += (lookRange - distLook) * 0.1;
+                    if (cross > 0) eyeRight += (lookRange - distLook) * 0.1;
+                    else eyeLeft += (lookRange - distLook) * 0.1;
                 }
+            });
 
-            } else if (flightState === 'DESCENDING_TO_LAND') {
-                statusTextEl.innerText = "Mendarat";
-                statusTextEl.style.color = "#FF9800";
-                rotZ = 0; rotX = 0;
+            const mapWarning = 6.0;
+            if (posX > (mapSize - mapWarning)) eyeRight += (mapSize - posX) * 0.1;
+            if (posX < (-mapSize + mapWarning)) eyeLeft += (posX - (-mapSize)) * 0.1;
+            if (posZ > (mapSize - mapWarning)) eyeFront += (mapSize - posZ) * 0.1;
+            if (posZ < (-mapSize + mapWarning)) eyeFront += (posZ - (-mapSize)) * 0.1;
 
-                posY -= 0.03;
-                activeCounterEl.innerText = "12.400";
+            let brainOut = brain.step(eyeLeft, eyeFront, eyeRight);
+            activeCounterEl.innerText = brainOut.activeNeurons.toLocaleString();
+            statusTextEl.innerText = brainOut.text;
+            statusTextEl.style.color = brainOut.color;
 
-                if (posY <= 1.2) {
-                    posY = 1.2;
-                    flightState = 'LANDED';
+            // Lerp sangat halus supaya transisi belok tidak mengejutkan
+            smoothTurn = THREE.MathUtils.lerp(smoothTurn, brainOut.turn, 0.05);
+            rotY += smoothTurn;
+
+            let nextX = posX - Math.sin(rotY) * brainOut.forward;
+            let nextZ = posZ - Math.cos(rotY) * brainOut.forward;
+
+            const mapLimit = 39.5;
+            if (nextX > mapLimit) { nextX = mapLimit; rotY += 0.02; }
+            if (nextX < -mapLimit) { nextX = -mapLimit; rotY += 0.02; }
+            if (nextZ > mapLimit) { nextZ = mapLimit; rotY += 0.02; }
+            if (nextZ < -mapLimit) { nextZ = -mapLimit; rotY += 0.02; }
+
+            const solidRadius = 1.0;
+            obstacles.forEach(obs => {
+                let dx = nextX - obs.position.x;
+                let dz = nextZ - obs.position.z;
+                let distXZ = Math.sqrt(dx * dx + dz * dz);
+                if (distXZ < solidRadius) {
+                    let pushAngle = Math.atan2(dz, dx);
+                    nextX = obs.position.x + Math.cos(pushAngle) * solidRadius;
+                    nextZ = obs.position.z + Math.sin(pushAngle) * solidRadius;
                 }
-            } else if (flightState === 'LANDED') {
-                statusTextEl.innerText = "Nengger (Istirahat)";
-                statusTextEl.style.color = "#00BCD4";
-                activeCounterEl.innerText = "8.100";
+            });
 
-                if (Math.random() < 0.004) { 
-                    flightState = 'FLYING';
-                    instinctTimer = 0;
-                    posY += 0.5; 
-                    rotY += (Math.random() - 0.5) * 1.0; 
-                }
-            }
+            posX = nextX;
+            posZ = nextZ;
+            posY += brainOut.lift;
+            if (posY < 1.2) posY = 1.2;
+            if (posY > 4.0) posY = 4.0;
+
+            rotZ = THREE.MathUtils.lerp(rotZ, -smoothTurn * 0.8, 0.1);
 
             flyGroup.position.set(posX, posY, posZ);
             flyGroup.rotation.y = rotY;
-            flyGroup.rotation.x = rotX;
             flyGroup.rotation.z = rotZ;
 
-            let targetCamX = posX + Math.sin(rotY) * 4.0;
-            let targetCamZ = posZ + Math.cos(rotY) * 4.0;
+            let targetCamX = posX + Math.sin(rotY) * 4.5;
+            let targetCamZ = posZ + Math.cos(rotY) * 4.5;
             let targetCamY = posY + 1.2;
 
-            camSmoothX = THREE.MathUtils.lerp(camSmoothX, targetCamX, 0.1);
-            camSmoothY = THREE.MathUtils.lerp(camSmoothY, targetCamY, 0.1);
-            camSmoothZ = THREE.MathUtils.lerp(camSmoothZ, targetCamZ, 0.1);
+            camSmoothX = THREE.MathUtils.lerp(camSmoothX, targetCamX, 0.06);
+            camSmoothY = THREE.MathUtils.lerp(camSmoothY, targetCamY, 0.06);
+            camSmoothZ = THREE.MathUtils.lerp(camSmoothZ, targetCamZ, 0.06);
 
             camera.position.set(camSmoothX, camSmoothY, camSmoothZ);
             camera.lookAt(posX, posY, posZ);
