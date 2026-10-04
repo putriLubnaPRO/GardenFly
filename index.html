@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>The Amazing Digital Fly - Visible Boundaries</title>
+    <title>The Amazing Digital Fly - Sharp Vision SNN</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -46,8 +46,8 @@
         <h3>🪰 The Amazing Digital Fly</h3>
         <p>Total SNN: <span class="neuron-glow">19.000</span> Neuron</p>
         <p>Koneksi Sinapsis: <span class="neuron-glow">40.000</span></p>
-        <p>Neuron Menyala: <span id="active-neuron-counter" class="neuron-glow">14.250</span> / 19K</p>
-        <p>Insting: <span id="fly-status-text" style="color: #4CAF50;">Terbang Terarah</span></p>
+        <p>Neuron Menyala: <span id="active-neuron-counter" class="neuron-glow">15.800</span> / 19K</p>
+        <p>Insting: <span id="fly-status-text" style="color: #4CAF50;">Mata Tajam & Responsif</span></p>
     </div>
 
     <div id="ad-box">
@@ -92,31 +92,26 @@
         ground.rotation.x = -Math.PI / 2;
         scene.add(ground);
 
-        // --- DINDING PEMBATAS MAP: Abu-abu Gelap Transparan (Kaca Gelap) ---
+        // --- DINDING PEMBATAS MAP KACA GELAP ---
         const mapSize = 46;
         const wallHeight = 5.0;
         const glassWallMat = new THREE.MeshStandardMaterial({ 
             color: 0x333333, 
             roughness: 0.2, 
             transparent: true, 
-            opacity: 0.35, // Kelihatan samar tapi jelas ada dinding
+            opacity: 0.35, 
             side: THREE.DoubleSide 
         });
 
         const wallGroup = new THREE.Group();
-        
-        // 4 Sisi Dinding Map
         const wallNorth = new THREE.Mesh(new THREE.PlaneGeometry(mapSize * 2, wallHeight), glassWallMat);
         wallNorth.position.set(0, wallHeight / 2, mapSize);
-        
         const wallSouth = new THREE.Mesh(new THREE.PlaneGeometry(mapSize * 2, wallHeight), glassWallMat);
         wallSouth.position.set(0, wallHeight / 2, -mapSize);
         wallSouth.rotation.y = Math.PI;
-
         const wallEast = new THREE.Mesh(new THREE.PlaneGeometry(mapSize * 2, wallHeight), glassWallMat);
         wallEast.position.set(mapSize, wallHeight / 2, 0);
         wallEast.rotation.y = -Math.PI / 2;
-
         const wallWest = new THREE.Mesh(new THREE.PlaneGeometry(mapSize * 2, wallHeight), glassWallMat);
         wallWest.position.set(-mapSize, wallHeight / 2, 0);
         wallWest.rotation.y = Math.PI / 2;
@@ -124,18 +119,16 @@
         wallGroup.add(wallNorth, wallSouth, wallEast, wallWest);
         scene.add(wallGroup);
 
-        // --- POHON REALISTIS DI DALAM MAP ---
+        // --- POHON REALISTIS ---
         const obstacles = [];
         const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 });
         const leavesMat = new THREE.MeshStandardMaterial({ color: 0x2e8b57, roughness: 0.8 });
 
         for (let i = 0; i < 14; i++) {
             const treeGroup = new THREE.Group();
-
             const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.6, 3, 10), trunkMat);
             trunk.position.y = 1.5;
             treeGroup.add(trunk);
-
             const leaves = new THREE.Mesh(new THREE.SphereGeometry(2.2, 12, 12), leavesMat);
             leaves.position.y = 4.0;
             treeGroup.add(leaves);
@@ -166,26 +159,32 @@
             flyGroup.add(customModel);
         });
 
-        class OptimizedFlyBrain {
+        // --- UPGRADE OTAK SNN: Mata Tajam & Keputusan Tegas ---
+        class SharpFlyBrain {
             constructor() {
                 this.energy = 0;
             }
             step(eyeLeft, eyeFront, eyeRight) {
                 this.energy++;
-                let turn = (eyeRight - eyeLeft) * 0.12;
-                if (eyeFront > 0.2) {
-                    turn += (Math.random() > 0.5 ? 0.9 : -0.9);
+                
+                // Otak memproses sinyal mata dengan bobot lebih tegas (tidak ragu-ragu)
+                let turn = (eyeRight - eyeLeft) * 0.35; 
+                
+                if (eyeFront > 0.1) {
+                    // Jika depan terhalang, langsung ambil keputusan belok tajam ke kiri/kanan
+                    turn += (eyeRight > eyeLeft ? 0.85 : -0.85);
                 } else {
-                    turn += (Math.random() - 0.5) * 0.05;
+                    turn += (Math.random() - 0.5) * 0.08;
                 }
+                
                 let forward = 0.18 + Math.random() * 0.02;
                 let lift = (Math.random() - 0.48) * 0.015;
-                let activeNeurons = Math.floor(13500 + Math.sin(this.energy * 0.1) * 2500 + Math.random() * 800);
+                let activeNeurons = Math.floor(15000 + Math.sin(this.energy * 0.15) * 2000 + Math.random() * 1000);
                 return { forward, turn, lift, activeNeurons };
             }
         }
 
-        const brain = new OptimizedFlyBrain();
+        const brain = new SharpFlyBrain();
 
         let posX = 0, posY = 2.0, posZ = 0;
         let rotY = 0, rotX = 0, rotZ = 0;
@@ -252,20 +251,44 @@
             requestAnimationFrame(animate);
 
             if (flightState === 'FLYING') {
-                statusTextEl.innerText = "Terbang dalam Kaca Batas Map";
+                statusTextEl.innerText = "Terbang Cerdas & Mata Tajam";
                 statusTextEl.style.color = "#4CAF50";
 
                 instinctTimer++;
 
-                let eyeLeft = 0.0, eyeFront = 0.0, eyeRight = 0.0;
                 let flyPos = new THREE.Vector3(posX, posY, posZ);
                 let flyDir = new THREE.Vector3(-Math.sin(rotY), 0, -Math.cos(rotY));
+
+                // --- SENSOR MATA LALAT (Raycast / Jarak Pandang Aktif) ---
+                let eyeLeft = 0.0, eyeFront = 0.0, eyeRight = 0.0;
+
+                obstacles.forEach(obs => {
+                    let obsPos = new THREE.Vector3(obs.position.x, posY, obs.position.z);
+                    let distLook = flyPos.distanceTo(obsPos);
+                    
+                    if (distLook < 8.5) { // Jangkauan mata lebih jauh
+                        let dirToObs = new THREE.Vector3().subVectors(obsPos, flyPos).normalize();
+                        let cross = flyDir.clone().cross(dirToObs).y;
+                        let dot = flyDir.clone().dot(dirToObs);
+                        
+                        if (dot > 0.2) eyeFront += (8.5 - distLook) * 0.8;
+                        if (cross > 0) eyeRight += (8.5 - distLook) * 0.8;
+                        else eyeLeft += (8.5 - distLook) * 0.8;
+                    }
+                });
+
+                // Deteksi dinding kaca batas map dengan mata lalat
+                const mapWarning = 7.0;
+                if (posX > (mapSize - mapWarning)) eyeRight += (mapSize - posX) * 0.5;
+                if (posX < (-mapSize + mapWarning)) eyeLeft += (posX - (-mapSize)) * 0.5;
+                if (posZ > (mapSize - mapWarning)) eyeFront += (mapSize - posZ) * 0.5;
+                if (posZ < (-mapSize + mapWarning)) eyeFront += (posZ - (-mapSize)) * 0.5;
 
                 let brainOut = brain.step(eyeLeft, eyeFront, eyeRight);
                 activeCounterEl.innerText = brainOut.activeNeurons.toLocaleString();
 
                 let targetTurn = brainOut.turn;
-                smoothTurn = THREE.MathUtils.lerp(smoothTurn, targetTurn, 0.15);
+                smoothTurn = THREE.MathUtils.lerp(smoothTurn, targetTurn, 0.25); // Belok lebih cepat & responsif
                 smoothForward = THREE.MathUtils.lerp(smoothForward, brainOut.forward, 0.15);
 
                 rotY += smoothTurn;
@@ -273,7 +296,7 @@
                 let nextX = posX - Math.sin(rotY) * smoothForward;
                 let nextZ = posZ - Math.cos(rotY) * smoothForward;
 
-                // --- DETEKSI TABRAKAN BATANG POHON ---
+                // --- TABRAKAN FISIK POHON ---
                 const solidRadius = 1.0;
                 obstacles.forEach(obs => {
                     let dx = nextX - obs.position.x;
@@ -284,16 +307,16 @@
                         let pushAngle = Math.atan2(dz, dx);
                         nextX = obs.position.x + Math.cos(pushAngle) * solidRadius;
                         nextZ = obs.position.z + Math.sin(pushAngle) * solidRadius;
-                        rotY += 0.6; // Belok lebih tegas pas dekat pohon
+                        rotY += 0.8; // Keputusan menghindar darurat yang tegas
                     }
                 });
 
-                // --- BATAS MAP DINDING KACA GELAP ---
+                // --- BATAS MAP KACA GELAP ---
                 const mapLimit = 43;
-                if (nextX > mapLimit) { nextX = mapLimit; rotY += 1.5; }
-                if (nextX < -mapLimit) { nextX = -mapLimit; rotY += 1.5; }
-                if (nextZ > mapLimit) { nextZ = mapLimit; rotY += 1.5; }
-                if (nextZ < -mapLimit) { nextZ = -mapLimit; rotY += 1.5; }
+                if (nextX > mapLimit) { nextX = mapLimit; rotY += 1.8; }
+                if (nextX < -mapLimit) { nextX = -mapLimit; rotY += 1.8; }
+                if (nextZ > mapLimit) { nextZ = mapLimit; rotY += 1.8; }
+                if (nextZ < -mapLimit) { nextZ = -mapLimit; rotY += 1.8; }
 
                 posX = nextX;
                 posZ = nextZ;
