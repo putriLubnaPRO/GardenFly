@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>The Amazing Digital Fly - Fixed Perch Duration</title>
+    <title>The Amazing Digital Fly - CNS Live HUD</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -14,18 +14,39 @@
             position: absolute; top: 15px; left: 15px; color: white;
             background: rgba(0,0,0,0.75); padding: 12px 16px; border-radius: 10px; font-size: 13px;
             z-index: 5; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.3);
-            pointer-events: none; min-width: 280px;
+            pointer-events: none; min-width: 250px;
         }
-        #info h3 { margin: 0 0 5px 0; color: #a8ffb2; font-size: 15px; }
-        #info p { margin: 3px 0; }
+        #info h3 { margin: 0 0 5px 0; color: #a8ffb2; font-size: 14px; }
+        #info p { margin: 3px 0; font-size: 12px; }
         .neuron-glow { color: #ffeb3b; font-weight: bold; }
         .synapse-glow { color: #ff4081; font-weight: bold; }
 
+        #cns-hud {
+            position: absolute; top: 15px; right: 15px; width: 260px;
+            background: rgba(10, 15, 25, 0.85); border: 1px solid rgba(0, 229, 255, 0.4);
+            border-radius: 10px; padding: 10px; color: #fff; z-index: 5;
+            backdrop-filter: blur(6px); box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            pointer-events: none; font-family: monospace;
+        }
+        .cns-header {
+            font-size: 10px; color: #00e5ff; letter-spacing: 1px; font-weight: bold;
+            border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 4px; margin-bottom: 6px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .cns-status-box {
+            background: rgba(0, 229, 255, 0.1); border-left: 3px solid #00e5ff;
+            padding: 6px 8px; margin-bottom: 6px; border-radius: 0 4px 4px 0;
+        }
+        .cns-status-title { font-size: 11px; font-weight: bold; color: #fff; text-transform: uppercase; }
+        .cns-status-desc { font-size: 10px; color: #a8ffb2; margin-top: 2px; }
+        .cns-metrics { font-size: 9px; color: #aaa; display: flex; justify-content: space-between; }
+        .cns-metrics span { color: #ffeb3b; }
+
         #ad-box {
-            position: absolute; bottom: 15px; right: 15px; width: 280px; height: 90px;
+            position: absolute; bottom: 15px; right: 15px; width: 260px; height: 80px;
             background: #fff; border: 2px dashed #ff4444; display: flex; 
             align-items: center; justify-content: center; text-align: center; font-weight: bold; 
-            color: #333; font-size: 11px; z-index: 10; border-radius: 10px;
+            color: #333; font-size: 10px; z-index: 10; border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
 
@@ -44,10 +65,24 @@
 <body>
 
     <div id="info">
-        <h3>🪰 The Amazing Digital Fly</h3>
-        <p>Total SNN: <span class="neuron-glow">19.000</span> Neuron</p>
-        <p>Koneksi Sinapsis: <span class="synapse-glow">40.000 (3D Web Active)</span></p>
-        <p>Status Otak: <span id="fly-status-text" style="color: #4CAF50;">Terbang Otonom</span></p>
+        <h3>🪰 Digital Fly SNN</h3>
+        <p>Neuron: <span class="neuron-glow">19.000</span></p>
+        <p>Sinapsis: <span class="synapse-glow">40.000</span></p>
+    </div>
+
+    <div id="cns-hud">
+        <div class="cns-header">
+            <span>FLY BRAIN</span>
+            <span style="color: #00ffcc;">● LIVE</span>
+        </div>
+        <div class="cns-status-box">
+            <div id="hud-action-title" class="cns-status-title">AUTONOMOUS FLIGHT</div>
+            <div id="hud-action-desc" class="cns-status-desc">descending neurons drive course</div>
+        </div>
+        <div class="cns-metrics">
+            <div>Dopamine: <span id="hud-dopamine">54%</span></div>
+            <div>Activity: <span id="hud-act">High SNN</span></div>
+        </div>
     </div>
 
     <div id="ad-box">
@@ -85,7 +120,6 @@
         sunLight.position.set(30, 50, 20);
         scene.add(sunLight);
 
-        // --- TANAH TAMAN HIJAU ---
         const ground = new THREE.Mesh(
             new THREE.PlaneGeometry(120, 120),
             new THREE.MeshStandardMaterial({ color: 0x3b7a57, roughness: 0.9 })
@@ -93,7 +127,6 @@
         ground.rotation.x = -Math.PI / 2;
         scene.add(ground);
 
-        // --- BUNGA-BUNGA TAMAN ---
         const flowerColors = [0xff3366, 0xffeb3b, 0xff9800, 0xe91e63, 0xffffff];
         for (let i = 0; i < 40; i++) {
             const flowerGroup = new THREE.Group();
@@ -117,7 +150,6 @@
             }
         }
 
-        // --- DINDING PEMBATAS MAP KACA GELAP ---
         const mapSize = 42;
         const wallHeight = 5.0;
         const glassWallMat = new THREE.MeshStandardMaterial({ 
@@ -140,7 +172,6 @@
         wallGroup.add(wallNorth, wallSouth, wallEast, wallWest);
         scene.add(wallGroup);
 
-        // --- POHON DI DALAM MAP ---
         const obstacles = [];
         const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 });
         const leavesMat = new THREE.MeshStandardMaterial({ color: 0x2e8b57, roughness: 0.8 });
@@ -166,7 +197,6 @@
         const flyGroup = new THREE.Group();
         scene.add(flyGroup);
 
-        // --- 40.000 KONEKSI SINAPSIS (VISUAL 3D WEB) ---
         const synapseCount = 800;
         const synapseGeo = new THREE.BufferGeometry();
         const synapsePositions = new Float32Array(synapseCount * 6);
@@ -201,7 +231,6 @@
         const eyeRayLine = new THREE.Line(rayGeometry, rayLineMat);
         scene.add(eyeRayLine);
 
-        // --- OTAK SNN & FITUR NENGGER (DURASI WAJAR: 3 - 12 DETIK) ---
         class SNNFlyBrain {
             constructor() { 
                 this.time = 0; 
@@ -212,11 +241,10 @@
             step(eyeLeft, eyeFront, eyeRight) {
                 this.time++;
 
-                // Logika Nengger Normal (Durasi 3 s.d 12 detik saja, alias 180 - 720 frame)
                 if (!this.isPerched && this.time > this.nextPerchCheck) {
                     if (Math.random() < 0.3) { 
                         this.isPerched = true;
-                        this.perchTimer = Math.floor(Math.random() * 540) + 180; // 3 sampai 12 detik
+                        this.perchTimer = Math.floor(Math.random() * 540) + 180; 
                     }
                     this.nextPerchCheck = this.time + Math.floor(Math.random() * 400) + 300;
                 }
@@ -226,21 +254,24 @@
                     if (this.perchTimer <= 0 || eyeFront > 0.25) {
                         this.isPerched = false; 
                     }
-                    return { forward: 0, turn: 0, lift: 0, perched: true, text: "💤 Sedang Nengger Istirahat", color: "#00BCD4" };
+                    return { 
+                        forward: 0, turn: 0, lift: 0, perched: true, 
+                        title: "RESTING / GROOMING", desc: "halteres locked, tarsus resting", dop: "32%" 
+                    };
                 }
 
                 let turn = 0;
-                let statusText = "Terbang Otonom (Taman Indah)";
-                let statusColor = "#4CAF50";
+                let title = "AUTONOMOUS FLIGHT";
+                let desc = "descending neurons drive course";
 
                 if (eyeFront > 0.3) {
                     turn += (eyeRight > eyeLeft ? -0.04 : 0.04);
-                    statusText = "⚡ Menghindar Darurat";
-                    statusColor = "#FF5722";
+                    title = "EMERGENCY AVOIDANCE";
+                    desc = "optic lobes trigger sharp turn";
                 } else if (eyeFront > 0.12 || eyeLeft > 0.25 || eyeRight > 0.25) {
                     turn += (eyeRight - eyeLeft) * 0.05;
-                    statusText = "Belok Halus Objek";
-                    statusColor = "#FFEB3B";
+                    title = "OBSTACLE STEERING";
+                    desc = "mushroom bodies adjust vector";
                 } else {
                     turn += Math.sin(this.time * 0.04) * 0.015;
                 }
@@ -249,7 +280,7 @@
                 let forward = 0.11;
                 let lift = Math.sin(this.time * 0.06) * 0.008;
 
-                return { forward, turn, lift, perched: false, text: statusText, color: statusColor };
+                return { forward, turn, lift, perched: false, title, desc, dop: "58%" };
             }
         }
 
@@ -266,7 +297,10 @@
         let joystickMove = { x: 0, y: 0 };
         const stick = document.getElementById('joystick-stick');
         const base = document.getElementById('joystick-base');
-        const statusTextEl = document.getElementById('fly-status-text');
+        
+        const hudTitleEl = document.getElementById('hud-action-title');
+        const hudDescEl = document.getElementById('hud-action-desc');
+        const hudDopEl = document.getElementById('hud-dopamine');
 
         function updateJoystick(clientX, clientY) {
             const rect = base.getBoundingClientRect();
@@ -326,7 +360,6 @@
                 }
             });
 
-            // Animasi Sinapsis 40K Pulsing
             const posAttrSyn = synapseGeo.attributes.position;
             for(let i = 1; i < posAttrSyn.count; i += 2) {
                 posAttrSyn.setY(i, 0.2 + Math.sin(Date.now() * 0.01 + i) * 0.15);
@@ -350,8 +383,9 @@
             if (posZ < (-mapSize + mapWarning)) eyeFront += (posZ - (-mapSize)) * 0.15;
 
             let brainOut = brain.step(eyeLeft, eyeFront, eyeRight);
-            statusTextEl.innerText = brainOut.text;
-            statusTextEl.style.color = brainOut.color;
+            hudTitleEl.innerText = brainOut.title;
+            hudDescEl.innerText = brainOut.desc;
+            hudDopEl.innerText = brainOut.dop;
 
             if (!brainOut.perched) {
                 smoothTurn = THREE.MathUtils.lerp(smoothTurn, brainOut.turn, 0.08);
@@ -417,7 +451,7 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
     </script>
-</body>
     <script src="https://pl31655377.profitableratecpmnetwork.com/c6/d7/62/c6d7626fce1b5f1670359b8e1c8f1ff1.js"></script>
+</body>
     </html>
     
