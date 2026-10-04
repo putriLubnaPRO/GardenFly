@@ -2,152 +2,249 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Amazing Digital Fly Simulator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>The Amazing Digital Fly - 3D Simulation</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #111; font-family: Arial, sans-serif; }
-        #info {
-            position: absolute; top: 10px; left: 10px; color: white;
-            background: rgba(0,0,0,0.6); padding: 10px; border-radius: 8px; font-size: 14px;
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; user-select: none; }
+        #ui {
+            position: absolute; top: 10px; left: 10px; color: #ff00ff;
+            background: rgba(0,0,0,0.7); padding: 12px; border-radius: 10px;
+            border: 2px solid #00ffff; pointer-events: none; font-size: 12px;
         }
-        /* Kotak Iklan di pinggir layar */
-        #ad-box {
-            position: absolute; bottom: 10px; right: 10px; width: 300px; height: 100px;
-            background: #fff; border: 2px dashed #ff0055; display: flex; 
-            align-items: center; justify-content: center; text-align: center; font-weight: bold; color: #333;
+        /* Kotak Iklan Monetisasi (Adsterra / AdSense) */
+        #ad-container {
+            position: absolute; bottom: 10px; right: 10px; width: 280px; height: 90px;
+            background: #222; border: 2px dashed #ff0055; display: flex;
+            align-items: center; justify-content: center; text-align: center;
+            color: #fff; font-size: 11px; z-index: 10; border-radius: 8px;
+        }
+        /* Virtual Joystick / Kontrol Sentuh Tablet */
+        #joystick-base {
+            position: absolute; bottom: 30px; left: 30px; width: 120px; height: 120px;
+            background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.4);
+            border-radius: 50%; touch-action: none; z-index: 10;
+        }
+        #joystick-stick {
+            position: absolute; top: 35px; left: 35px; width: 50px; height: 50px;
+            background: #ff0055; border-radius: 50%; pointer-events: none;
+            box-shadow: 0 0 10px #ff0055;
         }
     </style>
 </head>
 <body>
 
-    <div id="info">
-        <h3>The Amazing Digital Fly</h3>
-        <p>Otak Saraf SNN Aktif (Versi Web Ringan)</p>
+    <div id="ui">
+        <h2>🎪 THE AMAZING DIGITAL FLY</h2>
+        <p>Status: Otak Saraf Kompleks (SNN) Aktif</p>
+        <p>Gunakan Joystick untuk Geser Kamera</p>
     </div>
 
-    <!-- KOTAK IKLAN (Tempat pasang script Adsterra / AdSense nanti) -->
-    <div id="ad-box">
-        [ Tempat Iklan Adsterra / AdSense ]<br><span style="font-size:10px; color:gray;">Iklan Monetisasi Web</span>
+    <!-- Kotak Iklan -->
+    <div id="ad-container">
+        [ Tempat Script Iklan Adsterra / AdSense ]
     </div>
 
-    <!-- Load Three.js untuk Grafik 3D yang Ringan di Browser -->
+    <!-- Virtual Joystick -->
+    <div id="joystick-base">
+        <div id="joystick-stick"></div>
+    </div>
+
+    <!-- Load Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    
+
     <script>
-        // 1. SETUP DUNIA 3D (The Amazing Digital Circus style)
+        // 1. SETUP DUNIA AMAZING DIGITAL CIRCUS (Estetika Warna-Warni & Geometris)
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x1a1a2e);
+        scene.background = new THREE.Color(0x110022);
+        scene.fog = new THREE.FogExp2(0x110022, 0.03);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: false }); // Anti-alias dimatikan agar ringan di Advan Tab A10
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Lampu
-        const light = new THREE.DirectionalLight(0xffffff, 1);
-        light.position.set(5, 10, 7);
-        scene.add(light);
-        scene.add(new THREE.AmbientLight(0x404040));
+        // Pencahayaan Circus
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffaa00, 1);
+        dirLight.position.set(10, 20, 10);
+        scene.add(dirLight);
 
-        // Buat Ruangan Sirkus (Kotak Dunia)
-        const roomGeo = new THREE.BoxGeometry(30, 15, 30);
-        const roomMat = new THREE.MeshBasicMaterial({ color: 0xffcc00, wireframe: true });
-        const room = new THREE.Mesh(roomGeo, roomMat);
-        scene.add(room);
+        // Lantai Kotak-Kotak (Checkered Floor ala Circus)
+        const floorGeo = new THREE.PlaneGeometry(60, 60, 20, 20);
+        const floorMat = new THREE.MeshBasicMaterial({ color: 0x550055, wireframe: true });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        scene.add(floor);
 
-        // 2. BUAT TUBUH LALAT (Model 3D Sederhana / Kapsul Bersayap)
+        // Pilar & Dekorasi Ruangan Sirkus
+        for (let i = 0; i < 12; i++) {
+            const pillarGeo = new THREE.CylinderGeometry(1, 1, 15, 8);
+            const pillarMat = new THREE.MeshStandardMaterial({ color: i % 2 === 0 ? 0xff0055 : 0x00ffff });
+            const pillar = new THREE.Mesh(pillarGeo, pillarMat);
+            const angle = (i / 12) * Math.PI * 2;
+            pillar.position.set(Math.cos(angle) * 22, 7.5, Math.sin(angle) * 22);
+            scene.add(pillar);
+        }
+
+        // 2. MODEL 3D LALAT YANG LEBIH DETAIL (Kepala, Mata Besar, Toraks, Perut, Sayap)
         const flyGroup = new THREE.Group();
-        
-        const bodyGeo = new THREE.SphereGeometry(0.4, 16, 16);
-        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
-        const flyBody = new THREE.Mesh(bodyGeo, bodyMat);
-        flyGroup.add(flyBody);
 
-        // Sayap Kiri & Kanan
-        const wingGeo = new THREE.BoxGeometry(0.8, 0.05, 0.3);
-        const wingMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 });
-        
+        // Badan/Toraks
+        const thoraxGeo = new THREE.SphereGeometry(0.35, 8, 8);
+        const thoraxMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2 });
+        const thorax = new THREE.Mesh(thoraxGeo, thoraxMat);
+        flyGroup.add(thorax);
+
+        // Perut Belakang
+        const abdomenGeo = new THREE.CylinderGeometry(0.2, 0.3, 0.6, 8);
+        abdomenGeo.rotateX(Math.PI / 2);
+        const abdomenMat = new THREE.MeshStandardMaterial({ color: 0x553311 });
+        const abdomen = new THREE.Mesh(abdomenGeo, abdomenMat);
+        abdomen.position.set(0, 0, -0.45);
+        flyGroup.add(abdomen);
+
+        // Mata Merah Besar Khas Lalat
+        const eyeGeo = new THREE.SphereGeometry(0.18, 8, 8);
+        const eyeMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0x550000 });
+        const eyeLeft = new THREE.Mesh(eyeGeo, eyeMat);
+        eyeLeft.position.set(0.2, 0.1, 0.25);
+        const eyeRight = eyeLeft.clone();
+        eyeRight.position.set(-0.2, 0.1, 0.25);
+        flyGroup.add(eyeLeft);
+        flyGroup.add(eyeRight);
+
+        // Sayap Transparan
+        const wingGeo = new THREE.BoxGeometry(0.9, 0.02, 0.3);
+        const wingMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, side: THREE.DoubleSide });
         const wingLeft = new THREE.Mesh(wingGeo, wingMat);
-        wingLeft.position.set(0.5, 0.2, 0);
+        wingLeft.position.set(0.45, 0.3, 0);
+        const wingRight = wingLeft.clone();
+        wingRight.position.set(-0.45, 0.3, 0);
         flyGroup.add(wingLeft);
-
-        const wingRight = new THREE.Mesh(wingGeo, wingMat);
-        wingRight.position.set(-0.5, 0.2, 0);
         flyGroup.add(wingRight);
 
         scene.add(flyGroup);
-        flyGroup.position.set(0, 0, 0);
 
-        // 3. RUMUS OTAK SARAF (SNN Mini versi JavaScript - Menggantikan Python)
-        class MiniNeuron {
-            constructor(decay = 0.7, threshold = 2.5) {
-                this.voltage = 0.0;
-                this.decay = decay;
-                this.threshold = threshold;
+        // 3. STRUKTUR OTAK LENGKAP (Spiking Neural Network / CPG + Sensor Optik + Motorik 6 Derajat Kebebasan)
+        class FullInsectBrain {
+            constructor() {
+                // Saraf Pusat (Central Pattern Generator untuk ritme terbang alami)
+                this.cpgPhase = 0;
+                // Saraf Memori & Tegangan
+                this.voltageYaw = 0;
+                this.voltagePitch = 0;
+                this.voltageThrust = 1.0;
             }
-            update(input_current) {
-                this.voltage = (this.voltage * this.decay) + input_current;
-                if (this.voltage >= this.threshold) {
-                    this.voltage = 0.0;
-                    return 1.0; // Spike!
-                }
-                return 0.0;
+
+            process(sensorFront, sensorLeft, sensorRight) {
+                this.cpgPhase += 0.25; // Ritme kepakan konstan
+
+                // Logika Saraf SNN: Refleks Visual & Insting Liar 3D
+                let turnBias = 0;
+                if (sensorLeft < 4.0) turnBias -= 0.15;  // Menghindar ke kanan
+                if (sensorRight < 4.0) turnBias += 0.15; // Menghindar ke kiri
+
+                // Insting acak serangga (terbang zig-zag liar ke segala arah)
+                let stochasticFlight = (Math.random() - 0.5) * 0.4;
+                
+                this.voltageYaw = (this.voltageYaw * 0.7) + turnBias + stochasticFlight;
+                let pitch = Math.sin(this.cpgPhase * 1.5) * 0.3 + (Math.random() - 0.5) * 0.2;
+                let altitudeChange = Math.cos(this.cpgPhase * 0.8) * 0.25;
+
+                return {
+                    yaw: this.voltageYaw,
+                    pitch: pitch,
+                    altitude: altitudeChange,
+                    wingSpeed: 1.2 + Math.abs(stochasticFlight)
+                };
             }
         }
 
-        const neuronKiri = new MiniNeuron();
-        const neuronKanan = new MiniNeuron();
+        const lalatBrain = new FullInsectBrain();
 
-        let posX = 0, posY = 0, posZ = 0;
-        let rotY = 0;
+        // 4. VARIABEL POSISI & KONTROL JOYSTICK KAMERA
+        let flyPos = new THREE.Vector3(0, 3, 0);
+        let flyRotY = 0;
+        let cameraAngleX = 0, cameraAngleY = 0;
 
-        // 4. LOOP UTAMA (ANIMASI & OTAK BERPUTAR)
+        let joystickMove = { x: 0, y: 0 };
+        const stick = document.getElementById('joystick-stick');
+        const base = document.getElementById('joystick-base');
+
+        // Handle Touch Joystick untuk Tablet
+        base.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            const rect = base.getBoundingClientRect();
+            let x = touch.clientX - (rect.left + rect.width / 2);
+            let y = touch.clientY - (rect.top + rect.height / 2);
+            const dist = Math.sqrt(x*x + y*y);
+            const maxDist = 45;
+            if (dist > maxDist) {
+                x = (x / dist) * maxDist;
+                y = (y / dist) * maxDist;
+            }
+            stick.style.transform = `translate(${x}px, ${y}px)`;
+            joystickMove.x = x / maxDist;
+            joystickMove.y = y / maxDist;
+        });
+
+        base.addEventListener('touchend', () => {
+            stick.style.transform = `translate(0px, 0px)`;
+            joystickMove.x = 0;
+            joystickMove.y = 0;
+        });
+
+        // 5. LOOP UTAMA ANIMASI & FISIKA LALAT
         function animate() {
             requestAnimationFrame(animate);
 
-            // Simulasi "Mata" / Sensor Jarak Sederhana
-            let adaTembokKiri = (Math.abs(posX) > 12) ? 4.0 : 0.0;
-            let adaTembokKanan = (Math.abs(posX) > 12) ? 4.0 : 0.0;
+            // Simulasi Sensor Mata Lalat (Mendeteksi batas ruangan sirkus)
+            let sensorFront = 10 - Math.abs(flyPos.z);
+            let sensorLeft = 18 - Math.abs(flyPos.x);
+            let sensorRight = 18 - Math.abs(flyPos.x);
 
-            // Insting Liar Lalat (Acak)
-            let instingKiri = Math.random() * 1.5;
-            let instingKanan = Math.random() * 1.5;
+            // Proses Berpikir Lewat Otak SNN
+            let motor = lalatBrain.process(sensorFront, sensorLeft, sensorRight);
 
-            // Aliran Saraf SNN
-            let inputKiri = adaTembokKanan + instingKiri;
-            let inputKanan = adaTembokKiri + instingKanan;
+            // Perbarui Pergerakan Lalat 3D
+            flyRotY += motor.yaw;
+            flyPos.x -= Math.sin(flyRotY) * 0.12;
+            flyPos.z -= Math.cos(flyRotY) * 0.12;
+            flyPos.y += motor.altitude;
 
-            let spikeKiri = neuronKiri.update(inputKiri);
-            let spikeKanan = neuronKanan.update(inputKanan);
-
-            // Gerak Berdasarkan Otak
-            let belok = spikeKiri - spikeKanan;
-            rotY += belok * 0.1;
-            
-            // Terbang maju otomatis + insting naik turun
-            posX -= Math.sin(rotY) * 0.15;
-            posZ -= Math.cos(rotY) * 0.15;
-            posY += (Math.random() - 0.5) * 0.2; // Terbang acak vertikal
-
-            // Batasi agar tetap di dalam ruangan sirkus
-            posX = Math.max(-13, Math.min(13, posX));
-            posZ = Math.max(-13, Math.min(13, posZ));
-            posY = Math.min(6, Math.max(-6, posY));
+            // Batasi agar lalat tetap di dalam ruangan sirkus
+            flyPos.x = Math.max(-18, Math.min(18, flyPos.x));
+            flyPos.z = Math.max(-18, Math.min(18, flyPos.z));
+            flyPos.y = Math.max(1, Math.min(10, flyPos.y));
 
             // Terapkan ke Model 3D Lalat
-            flyGroup.position.set(posX, posY, posZ);
-            flyGroup.rotation.y = rotY;
+            flyGroup.position.copy(flyPos);
+            flyGroup.rotation.y = flyRotY;
+            flyGroup.rotation.z = motor.pitch;
 
-            // Efek kepakkan sayap cepat
-            wingLeft.rotation.z = Math.sin(Date.now() * 0.05) * 0.5;
-            wingRight.rotation.z = -Math.sin(Date.now() * 0.05) * 0.5;
+            // Animasi Kepakkan Sayap Super Cepat Khas Lalat
+            let wingSpeed = Date.now() * 0.05 * motor.wingSpeed;
+            wingLeft.rotation.z = Math.sin(wingSpeed) * 0.8;
+            wingRight.rotation.z = -Math.sin(wingSpeed) * 0.8;
+
+            // Kontrol Kamera mengikuti Joystick pengguna
+            cameraAngleY -= joystickMove.x * 0.03;
+            cameraAngleX += joystickMove.y * 0.02;
+            cameraAngleX = Math.max(-Math.PI/3, Math.min(Math.PI/3, cameraAngleX));
+
+            // Posisi Kamera mengikuti lalat dari belakang dengan sudut pandang dinamis
+            let camDist = 6;
+            camera.position.x = flyPos.x + Math.sin(flyRotY + cameraAngleY) * camDist;
+            camera.position.z = flyPos.z + Math.cos(flyRotY + cameraAngleY) * camDist;
+            camera.position.y = flyPos.y + 2 + cameraAngleX * 3;
+            camera.lookAt(flyPos.x, flyPos.y + 0.5, flyPos.z);
 
             renderer.render(scene, camera);
         }
 
         animate();
 
-        // Responsive kalau layar tablet diputar
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
@@ -155,5 +252,5 @@
         });
     </script>
 </body>
-      </html>
-  
+    </html>
+    
