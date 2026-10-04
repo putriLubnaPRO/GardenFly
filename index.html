@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>The Amazing Digital Fly - Realistic Trees</title>
+    <title>The Amazing Digital Fly - Visible Boundaries</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -47,7 +47,7 @@
         <p>Total SNN: <span class="neuron-glow">19.000</span> Neuron</p>
         <p>Koneksi Sinapsis: <span class="neuron-glow">40.000</span></p>
         <p>Neuron Menyala: <span id="active-neuron-counter" class="neuron-glow">14.250</span> / 19K</p>
-        <p>Insting: <span id="fly-status-text" style="color: #4CAF50;">Terbang Realistis</span></p>
+        <p>Insting: <span id="fly-status-text" style="color: #4CAF50;">Terbang Terarah</span></p>
     </div>
 
     <div id="ad-box">
@@ -92,41 +92,56 @@
         ground.rotation.x = -Math.PI / 2;
         scene.add(ground);
 
-        // Batas Pagar Map
-        const fenceGroup = new THREE.Group();
-        const fenceMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.8 });
-        const mapSize = 48;
+        // --- DINDING PEMBATAS MAP: Abu-abu Gelap Transparan (Kaca Gelap) ---
+        const mapSize = 46;
+        const wallHeight = 5.0;
+        const glassWallMat = new THREE.MeshStandardMaterial({ 
+            color: 0x333333, 
+            roughness: 0.2, 
+            transparent: true, 
+            opacity: 0.35, // Kelihatan samar tapi jelas ada dinding
+            side: THREE.DoubleSide 
+        });
+
+        const wallGroup = new THREE.Group();
         
-        for (let i = -mapSize; i <= mapSize; i += 6) {
-            let p1 = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), fenceMat); p1.position.set(i, 1, mapSize);
-            let p2 = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), fenceMat); p2.position.set(i, 1, -mapSize);
-            fenceGroup.add(p1); fenceGroup.add(p2);
-            let p3 = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), fenceMat); p3.position.set(mapSize, 1, i);
-            let p4 = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), fenceMat); p4.position.set(-mapSize, 1, i);
-            fenceGroup.add(p3); fenceGroup.add(p4);
-        }
-        scene.add(fenceGroup);
+        // 4 Sisi Dinding Map
+        const wallNorth = new THREE.Mesh(new THREE.PlaneGeometry(mapSize * 2, wallHeight), glassWallMat);
+        wallNorth.position.set(0, wallHeight / 2, mapSize);
+        
+        const wallSouth = new THREE.Mesh(new THREE.PlaneGeometry(mapSize * 2, wallHeight), glassWallMat);
+        wallSouth.position.set(0, wallHeight / 2, -mapSize);
+        wallSouth.rotation.y = Math.PI;
 
-        // --- BIKIN POHON REALISTIS: Batang Coklat di bawah, Daun Bulat di atas ---
+        const wallEast = new THREE.Mesh(new THREE.PlaneGeometry(mapSize * 2, wallHeight), glassWallMat);
+        wallEast.position.set(mapSize, wallHeight / 2, 0);
+        wallEast.rotation.y = -Math.PI / 2;
+
+        const wallWest = new THREE.Mesh(new THREE.PlaneGeometry(mapSize * 2, wallHeight), glassWallMat);
+        wallWest.position.set(-mapSize, wallHeight / 2, 0);
+        wallWest.rotation.y = Math.PI / 2;
+
+        wallGroup.add(wallNorth, wallSouth, wallEast, wallWest);
+        scene.add(wallGroup);
+
+        // --- POHON REALISTIS DI DALAM MAP ---
         const obstacles = [];
-        const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 }); // Batang cokelat
-        const leavesMat = new THREE.MeshStandardMaterial({ color: 0x2e8b57, roughness: 0.8 }); // Daun hijau
+        const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 });
+        const leavesMat = new THREE.MeshStandardMaterial({ color: 0x2e8b57, roughness: 0.8 });
 
-        for (let i = 0; i < 16; i++) {
+        for (let i = 0; i < 14; i++) {
             const treeGroup = new THREE.Group();
 
-            // 1. Batang silinder kecil di bawah
             const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.6, 3, 10), trunkMat);
             trunk.position.y = 1.5;
             treeGroup.add(trunk);
 
-            // 2. Daun bulat di atas batang
             const leaves = new THREE.Mesh(new THREE.SphereGeometry(2.2, 12, 12), leavesMat);
             leaves.position.y = 4.0;
             treeGroup.add(leaves);
 
-            let x = (Math.random() - 0.5) * 70;
-            let z = (Math.random() - 0.5) * 70;
+            let x = (Math.random() - 0.5) * 65;
+            let z = (Math.random() - 0.5) * 65;
             if (Math.abs(x) > 10 || Math.abs(z) > 10) {
                 treeGroup.position.set(x, 0, z);
                 scene.add(treeGroup);
@@ -159,7 +174,7 @@
                 this.energy++;
                 let turn = (eyeRight - eyeLeft) * 0.12;
                 if (eyeFront > 0.2) {
-                    turn += (Math.random() > 0.5 ? 0.8 : -0.8);
+                    turn += (Math.random() > 0.5 ? 0.9 : -0.9);
                 } else {
                     turn += (Math.random() - 0.5) * 0.05;
                 }
@@ -172,7 +187,7 @@
 
         const brain = new OptimizedFlyBrain();
 
-        let posX = 0, posY = 2.0, posZ = 0; // Mulai di ketinggian tengah batang
+        let posX = 0, posY = 2.0, posZ = 0;
         let rotY = 0, rotX = 0, rotZ = 0;
         let flightState = 'FLYING'; 
         let instinctTimer = 0;
@@ -237,7 +252,7 @@
             requestAnimationFrame(animate);
 
             if (flightState === 'FLYING') {
-                statusTextEl.innerText = "Terbang Sekitar Batang & Daun";
+                statusTextEl.innerText = "Terbang dalam Kaca Batas Map";
                 statusTextEl.style.color = "#4CAF50";
 
                 instinctTimer++;
@@ -259,7 +274,7 @@
                 let nextZ = posZ - Math.cos(rotY) * smoothForward;
 
                 // --- DETEKSI TABRAKAN BATANG POHON ---
-                const solidRadius = 1.0; // Radius pas di batang kecil
+                const solidRadius = 1.0;
                 obstacles.forEach(obs => {
                     let dx = nextX - obs.position.x;
                     let dz = nextZ - obs.position.z;
@@ -269,34 +284,23 @@
                         let pushAngle = Math.atan2(dz, dx);
                         nextX = obs.position.x + Math.cos(pushAngle) * solidRadius;
                         nextZ = obs.position.z + Math.sin(pushAngle) * solidRadius;
-                        rotY += 0.5;
-                    }
-
-                    let distLook = flyPos.distanceTo(new THREE.Vector3(obs.position.x, posY, obs.position.z));
-                    if (distLook < 7) {
-                        let dirToObs = new THREE.Vector3().subVectors(obs.position, flyPos).normalize();
-                        let cross = flyDir.clone().cross(dirToObs).y;
-                        let dot = flyDir.clone().dot(dirToObs);
-                        if (dot > 0.05) eyeFront += (7 - distLook) * 0.5;
-                        if (cross > 0) eyeRight += (7 - distLook) * 0.5;
-                        else eyeLeft += (7 - distLook) * 0.5;
+                        rotY += 0.6; // Belok lebih tegas pas dekat pohon
                     }
                 });
 
-                // --- BATAS MAP ---
-                const mapLimit = 45;
-                if (nextX > mapLimit) { nextX = mapLimit; rotY += 1.2; }
-                if (nextX < -mapLimit) { nextX = -mapLimit; rotY += 1.2; }
-                if (nextZ > mapLimit) { nextZ = mapLimit; rotY += 1.2; }
-                if (nextZ < -mapLimit) { nextZ = -mapLimit; rotY += 1.2; }
+                // --- BATAS MAP DINDING KACA GELAP ---
+                const mapLimit = 43;
+                if (nextX > mapLimit) { nextX = mapLimit; rotY += 1.5; }
+                if (nextX < -mapLimit) { nextX = -mapLimit; rotY += 1.5; }
+                if (nextZ > mapLimit) { nextZ = mapLimit; rotY += 1.5; }
+                if (nextZ < -mapLimit) { nextZ = -mapLimit; rotY += 1.5; }
 
                 posX = nextX;
                 posZ = nextZ;
                 posY += brainOut.lift;
 
-                // --- KONTROL KETINGGIAN LALAT (Hanya terbang di kisaran setengah batang sampai area bawah daun) ---
-                if (posY <= 1.2) posY = 1.2;  // Batas bawah (tidak sampai nempel tanah banget)
-                if (posY >= 4.2) posY = 4.2;  // Batas atas (tidak terbang tinggi melayang di atas pohon)
+                if (posY <= 1.2) posY = 1.2;
+                if (posY >= 4.2) posY = 4.2;
 
                 if (instinctTimer > 450 && Math.random() < 0.003) {
                     flightState = 'DESCENDING_TO_LAND';
@@ -352,7 +356,7 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
     </script>
-</body>
     <script src="https://pl31655377.profitableratecpmnetwork.com/c6/d7/62/c6d7626fce1b5f1670359b8e1c8f1ff1.js"></script>
-                                                          </html>
+</body>
+    </html>
     
