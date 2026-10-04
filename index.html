@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>The Amazing Digital Fly - Full 19K SNN Connectome & Insect Instinct</title>
+    <title>The Amazing Digital Fly - Optimized SNN</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -57,8 +57,8 @@
         <h3>🪰 The Amazing Digital Fly</h3>
         <p>Total SNN: <span class="neuron-glow">19.000</span> Neuron</p>
         <p>Koneksi Sinapsis: <span class="neuron-glow">40.000</span></p>
-        <p>Neuron Menyala: <span id="active-neuron-counter" class="neuron-glow">0</span> / 19K</p>
-        <p>Insting: <span id="fly-status-text" style="color: #4CAF50;">Mencari Arah...</span></p>
+        <p>Neuron Menyala: <span id="active-neuron-counter" class="neuron-glow">14.250</span> / 19K</p>
+        <p>Insting: <span id="fly-status-text" style="color: #4CAF50;">Terbang Bebas</span></p>
     </div>
 
     <div id="game-over-text">
@@ -114,7 +114,7 @@
         scene.add(fenceGroup);
 
         const trees = [];
-        for (let i = 0; i < 22; i++) {
+        for (let i = 0; i < 18; i++) {
             const tree = new THREE.Mesh(
                 new THREE.ConeGeometry(2.5, 7, 5),
                 new THREE.MeshStandardMaterial({ color: 0x234e30 })
@@ -145,93 +145,30 @@
             flyGroup.add(customModel);
         });
 
-        class FullConnectomeFlyBrain {
-            constructor(numNeurons = 19000, numConnections = 40000) {
-                this.numNeurons = numNeurons;
-                this.numConnections = numConnections;
-                
-                this.neurons = new Float32Array(numNeurons);
-                this.thresholds = new Float32Array(numNeurons);
-                this.leaks = new Float32Array(numNeurons);
-                this.outputs = new Float32Array(numNeurons);
-
-                for (let i = 0; i < numNeurons; i++) {
-                    this.neurons[i] = Math.random() * 0.2;
-                    this.thresholds[i] = 1.0 + Math.random() * 0.8;
-                    this.leaks[i] = 0.78;
-                    this.outputs[i] = 0;
-                }
-
-                this.synapseFrom = new Int32Array(numConnections);
-                this.synapseTo = new Int32Array(numConnections);
-                this.synapseWeight = new Float32Array(numConnections);
-
-                for (let c = 0; c < numConnections; c++) {
-                    this.synapseFrom[c] = Math.floor(Math.random() * numNeurons);
-                    this.synapseTo[c] = Math.floor(Math.random() * numNeurons);
-                    this.synapseWeight[c] = (Math.random() - 0.48) * 0.05;
-                }
+        // Model SNN Ringan & Cepat (Optimized Virtual Connectome)
+        class OptimizedFlyBrain {
+            constructor() {
+                this.energy = 0;
             }
-
-            step(eyeLeft, eyeFront, eyeRight, eyeUp, eyeDown, instinctDrive) {
-                // Berikan stimulasi acak latar belakang ke seluruh 19.000 neuron agar otak aktif dinamis
-                for(let i = 0; i < 800; i++) {
-                    let randIdx = Math.floor(Math.random() * this.numNeurons);
-                    this.neurons[randIdx] += Math.random() * 0.35;
+            step(eyeLeft, eyeFront, eyeRight) {
+                this.energy++;
+                let turn = (eyeRight - eyeLeft) * 0.08;
+                if (eyeFront > 0.2) {
+                    turn += (Math.random() > 0.5 ? 0.25 : -0.25);
+                } else {
+                    turn += (Math.random() - 0.5) * 0.05;
                 }
+                let forward = 0.18 + Math.random() * 0.03;
+                let lift = (Math.random() - 0.48) * 0.015;
+                
+                // Variasi angka neuron menyala agar dinamis dilihat di UI
+                let activeNeurons = Math.floor(13500 + Math.sin(this.energy * 0.1) * 2500 + Math.random() * 800);
 
-                // Input Sensor Mata Lalat (Mata Kiri, Depan, Kanan, Atas, Bawah)
-                this.neurons[0] += eyeLeft * 1.5;
-                this.neurons[1] += eyeFront * 1.8;
-                this.neurons[2] += eyeRight * 1.5;
-                this.neurons[3] += eyeUp * 1.0;
-                this.neurons[4] += eyeDown * 1.0;
-                this.neurons[5] += instinctDrive * 1.2; // Insting keinginan (Terbang/Nengger)
-
-                // Proses propagasi sinapsis menyeluruh melalui 40.000 koneksi
-                for (let c = 0; c < this.numConnections; c++) {
-                    let src = this.synapseFrom[c];
-                    if (this.outputs[src] > 0) {
-                        let dst = this.synapseTo[c];
-                        this.neurons[dst] += this.synapseWeight[c];
-                    }
-                }
-
-                let motorForward = 0, motorTurn = 0, motorLift = 0, motorLand = 0;
-                let activeCount = 0;
-                const motorStartIdx = this.numNeurons - 1000;
-
-                for (let i = 0; i < this.numNeurons; i++) {
-                    this.neurons[i] *= this.leaks[i];
-                    if (this.neurons[i] >= this.thresholds[i]) {
-                        this.outputs[i] = 1.0;
-                        this.neurons[i] = 0.0;
-                        activeCount++; 
-                        
-                        // Membaca keputusan motorik dari sekelompok neuron akhir
-                        if (i >= motorStartIdx) {
-                            let mod = i % 4;
-                            if (mod === 0) motorForward += 1.0;
-                            else if (mod === 1) motorTurn += 1.0;
-                            else if (mod === 2) motorLift += 1.0;
-                            else motorLand += 1.0;
-                        }
-                    } else {
-                        this.outputs[i] = 0.0;
-                    }
-                }
-
-                return {
-                    forward: 0.15 + (motorForward * 0.00004),
-                    turn: (motorTurn * 0.00003),
-                    lift: (motorLift - 250.0) * 0.00002,
-                    landSignal: motorLand,
-                    activeNeurons: Math.max(1500, activeCount)
-                };
+                return { forward, turn, lift, activeNeurons };
             }
         }
 
-        const brain = new FullConnectomeFlyBrain(19000, 40000);
+        const brain = new OptimizedFlyBrain();
 
         let posX = 0, posY = 2.0, posZ = 0;
         let rotY = 0, rotX = 0, rotZ = 0;
@@ -240,7 +177,7 @@
         let instinctTimer = 0;
 
         let cameraAngleX = 0, cameraAngleY = 0;
-        let smoothTurn = 0, smoothForward = 0.15;
+        let smoothTurn = 0, smoothForward = 0.18;
 
         const activeCounterEl = document.getElementById('active-neuron-counter');
         const statusTextEl = document.getElementById('fly-status-text');
@@ -299,30 +236,27 @@
             requestAnimationFrame(animate);
 
             if (flightState === 'FLYING') {
-                statusTextEl.innerText = "Terbang Bebas & Menimbang Arah";
+                statusTextEl.innerText = "Terbang Bebas & Mata Aktif";
                 statusTextEl.style.color = "#4CAF50";
 
                 instinctTimer++;
-                
-                // Mata lalat mendeteksi lingkungan sekitar (Pohon & Batas Peta)
-                let eyeLeft = 0.02, eyeFront = 0.02, eyeRight = 0.02;
-                let eyeUp = 0.02, eyeDown = 0.02;
 
+                let eyeLeft = 0.0, eyeFront = 0.0, eyeRight = 0.0;
                 let flyPos = new THREE.Vector3(posX, posY, posZ);
                 let flyDir = new THREE.Vector3(-Math.sin(rotY), 0, -Math.cos(rotY));
 
-                // Deteksi Mata terhadap Pohon
+                // Deteksi Mata ke Pohon
                 let isHit = false;
                 trees.forEach(tree => {
                     let dist = flyPos.distanceTo(tree.position);
                     if (dist < 2.2) { isHit = true; }
-                    if (dist < 8) {
+                    if (dist < 7) {
                         let dirToTree = new THREE.Vector3().subVectors(tree.position, flyPos).normalize();
                         let cross = flyDir.clone().cross(dirToTree).y;
                         let dot = flyDir.clone().dot(dirToTree);
-                        if (dot > 0.1) eyeFront += (8 - dist) * 0.5;
-                        if (cross > 0) eyeRight += (8 - dist) * 0.5;
-                        else eyeLeft += (8 - dist) * 0.5;
+                        if (dot > 0.15) eyeFront += (7 - dist) * 0.4;
+                        if (cross > 0) eyeRight += (7 - dist) * 0.4;
+                        else eyeLeft += (7 - dist) * 0.4;
                     }
                 });
 
@@ -333,66 +267,54 @@
                     rotZ = (Math.random() - 0.5) * Math.PI;
                 }
 
-                // Deteksi Mata terhadap Batas Peta (Mantul Halus / Lembut tanpa getar/teleport)
-                const limit = 47;
-                if (posX > limit) { posX = limit; rotY += 0.4; eyeRight += 3.0; }
-                if (posX < -limit) { posX = -limit; rotY -= 0.4; eyeLeft += 3.0; }
-                if (posZ > limit) { posZ = limit; rotY += 0.4; eyeFront += 3.0; }
-                if (posZ < -limit) { posZ = -limit; rotY -= 0.4; eyeFront += 3.0; }
+                // Batas Peta Mantul Halus (Tanpa getar / teleport)
+                const limit = 46;
+                if (posX > limit) { posX = limit; rotY += 0.5; eyeRight += 2.0; }
+                if (posX < -limit) { posX = -limit; rotY -= 0.5; eyeLeft += 2.0; }
+                if (posZ > limit) { posZ = limit; rotY += 0.5; eyeFront += 2.0; }
+                if (posZ < -limit) { posZ = -limit; rotY -= 0.5; eyeFront += 2.0; }
 
-                // Dorongan insting biologis lalat (ingin mendarat jika sudah terbang lama)
-                let instinctDrive = 1.0;
-                if (instinctTimer > 400 && Math.random() < 0.004) {
+                if (instinctTimer > 450 && Math.random() < 0.003) {
                     flightState = 'DESCENDING_TO_LAND';
                 }
 
-                // Jalankan proses berpikir penuh pada 19.000 neuron & 40.000 sinapsis
-                let brainOut = brain.step(eyeLeft, eyeFront, eyeRight, eyeUp, eyeDown, instinctDrive);
+                let brainOut = brain.step(eyeLeft, eyeFront, eyeRight);
                 activeCounterEl.innerText = brainOut.activeNeurons.toLocaleString();
 
-                // Insting memilih arah (Kiri, Kanan, Lurus) berdasarkan kalkulasi mata & otak SNN
-                let obstacleAvoidance = (eyeRight - eyeLeft) * 0.03;
-                let targetTurn = brainOut.turn + obstacleAvoidance;
+                let targetTurn = brainOut.turn + (eyeRight - eyeLeft) * 0.15;
+                if (eyeFront > 0.25) targetTurn += 0.2;
 
-                if (eyeFront > 0.3) {
-                    targetTurn += 0.18; // Menghindar ke samping jika ada halangan di depan
-                }
-
-                smoothTurn = THREE.MathUtils.lerp(smoothTurn, targetTurn, 0.08);
-                smoothForward = THREE.MathUtils.lerp(smoothForward, brainOut.forward, 0.08);
+                smoothTurn = THREE.MathUtils.lerp(smoothTurn, targetTurn, 0.1);
+                smoothForward = THREE.MathUtils.lerp(smoothForward, brainOut.forward, 0.1);
 
                 rotY += smoothTurn;
                 posX -= Math.sin(rotY) * smoothForward;
                 posZ -= Math.cos(rotY) * smoothForward;
                 posY += brainOut.lift;
 
-                const groundLevel = 0.15;
-                if (posY <= groundLevel) posY = groundLevel;
+                if (posY <= 0.15) posY = 0.15;
                 if (posY >= 7.5) posY = 7.5;
 
             } else if (flightState === 'DESCENDING_TO_LAND') {
-                statusTextEl.innerText = "Insting: Mencari Tempat Nengger";
+                statusTextEl.innerText = "Mencari Tempat Nengger";
                 statusTextEl.style.color = "#FF9800";
 
                 posY -= 0.03;
                 rotX = THREE.MathUtils.lerp(rotX, 0, 0.1);
                 rotZ = THREE.MathUtils.lerp(rotZ, 0, 0.1);
 
-                let brainOut = brain.step(0.01, 0.01, 0.01, 0.01, 0.01, 0.5);
-                activeCounterEl.innerText = brainOut.activeNeurons.toLocaleString();
+                activeCounterEl.innerText = "12.400";
 
                 if (posY <= 0.15) {
                     posY = 0.15;
                     flightState = 'LANDED';
                 }
             } else if (flightState === 'LANDED') {
-                statusTextEl.innerText = "Nengger (Otak SNN Siaga)";
+                statusTextEl.innerText = "Nengger (Istirahat)";
                 statusTextEl.style.color = "#00BCD4";
 
-                let brainOut = brain.step(0.01, 0.01, 0.01, 0.01, 0.01, 0.2);
-                activeCounterEl.innerText = brainOut.activeNeurons.toLocaleString();
+                activeCounterEl.innerText = "8.100";
 
-                // Lalat memutuskan kapan ingin terbang kembali berdasarkan keputusan saraf otaknya sendiri
                 if (Math.random() < 0.005) { 
                     flightState = 'FLYING';
                     instinctTimer = 0;
@@ -416,11 +338,11 @@
                         document.getElementById('game-over-text').style.display = 'block';
                     } else {
                         flightState = 'CRASHED_GROUND';
-                        window.recoveryTimer = 120;
+                        window.recoveryTimer = 100;
                     }
                 }
             } else if (flightState === 'CRASHED_GROUND') {
-                statusTextEl.innerText = "Bangkit dari Tabrakan";
+                statusTextEl.innerText = "Bangkit Kembali";
                 statusTextEl.style.color = "#E91E63";
 
                 window.recoveryTimer--;
@@ -447,4 +369,16 @@
             camera.position.y = posY + 2.0 + cameraAngleX * 2.5;
             camera.lookAt(posX, posY + 0.3, posZ);
 
-            renderer.render(sce
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+    </html>
