@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>The Amazing Digital Fly - 40K Synapse Connections</title>
+    <title>The Amazing Digital Fly - Garden & Perching Feature</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -47,12 +47,20 @@
         <h3>🪰 The Amazing Digital Fly</h3>
         <p>Total SNN: <span class="neuron-glow">19.000</span> Neuron</p>
         <p>Koneksi Sinapsis: <span class="synapse-glow">40.000 (3D Web Active)</span></p>
-        <p>Neuron Menyala: <span id="active-neuron-counter" class="neuron-glow">13.900</span> / 19K</p>
         <p>Status Otak: <span id="fly-status-text" style="color: #4CAF50;">Terbang Otonom</span></p>
     </div>
 
     <div id="ad-box">
-        [ Tempat Iklan Adsterra / AdSense ]
+        <script>
+  atOptions = {
+    'key' : '1906564690a0b056148af87aadb9bbd4',
+    'format' : 'iframe',
+    'height' : 90,
+    'width' : 728,
+    'params' : {}
+  };
+</script>
+<script src="https://www.highrevenueformat.com/1906564690a0b056148af87aadb9bbd4/invoke.js"></script>
     </div>
 
     <div id="joystick-base">
@@ -77,6 +85,7 @@
         sunLight.position.set(30, 50, 20);
         scene.add(sunLight);
 
+        // --- TANAH TAMAN HIJAU ---
         const ground = new THREE.Mesh(
             new THREE.PlaneGeometry(120, 120),
             new THREE.MeshStandardMaterial({ color: 0x3b7a57, roughness: 0.9 })
@@ -84,15 +93,35 @@
         ground.rotation.x = -Math.PI / 2;
         scene.add(ground);
 
+        // --- TAMBAHAN BUNGA-BUNGA TAMAN YANG INDAH & RINGAN ---
+        const flowerColors = [0xff3366, 0xffeb3b, 0xff9800, 0xe91e63, 0xffffff];
+        for (let i = 0; i < 40; i++) {
+            const flowerGroup = new THREE.Group();
+            const stem = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.03, 0.03, 0.4, 4),
+                new THREE.MeshStandardMaterial({ color: 0x2e8b57 })
+            );
+            stem.position.y = 0.2;
+            flowerGroup.add(stem);
+
+            const colorMat = new THREE.MeshStandardMaterial({ color: flowerColors[Math.floor(Math.random() * flowerColors.length)] });
+            const petal = new THREE.Mesh(new THREE.DodecahedronGeometry(0.12), colorMat);
+            petal.position.y = 0.42;
+            flowerGroup.add(petal);
+
+            let fx = (Math.random() - 0.5) * 70;
+            let fz = (Math.random() - 0.5) * 70;
+            if (Math.abs(fx) > 5 || Math.abs(fz) > 5) {
+                flowerGroup.position.set(fx, 0, fz);
+                scene.add(flowerGroup);
+            }
+        }
+
         // --- DINDING PEMBATAS MAP KACA GELAP ---
         const mapSize = 42;
         const wallHeight = 5.0;
         const glassWallMat = new THREE.MeshStandardMaterial({ 
-            color: 0x333333, 
-            roughness: 0.2, 
-            transparent: true, 
-            opacity: 0.35, 
-            side: THREE.DoubleSide 
+            color: 0x333333, roughness: 0.2, transparent: true, opacity: 0.35, side: THREE.DoubleSide 
         });
 
         const wallGroup = new THREE.Group();
@@ -137,13 +166,11 @@
         const flyGroup = new THREE.Group();
         scene.add(flyGroup);
 
-        // --- 40.000 KONEKSI SINAPSIS (VISUAL 3D NEURON WEB DI KEPALA LALAT) ---
-        const synapseCount = 800; // Garis partikel efisien untuk mewakili keratan 40k sinapsis
+        // --- 40.000 KONEKSI SINAPSIS (VISUAL 3D WEB) ---
+        const synapseCount = 800;
         const synapseGeo = new THREE.BufferGeometry();
-        const synapsePositions = new Float32Array(synapseCount * 6); // 2 titik per garis sinapsis
-        
+        const synapsePositions = new Float32Array(synapseCount * 6);
         for(let i = 0; i < synapseCount * 6; i += 3) {
-            // Membentuk bola kecil di area kepala lalat
             synapsePositions[i] = (Math.random() - 0.5) * 0.4;
             synapsePositions[i+1] = 0.2 + (Math.random() - 0.5) * 0.4;
             synapsePositions[i+2] = -0.1 + (Math.random() - 0.5) * 0.4;
@@ -167,7 +194,6 @@
             flyGroup.add(customModel);
         });
 
-        // --- GARIS LASER MATA MAJEMUK ---
         const rayLineMat = new THREE.LineBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.6 });
         const rayGeometry = new THREE.BufferGeometry();
         const rayPositions = new Float32Array(6);
@@ -175,36 +201,56 @@
         const eyeRayLine = new THREE.Line(rayGeometry, rayLineMat);
         scene.add(eyeRayLine);
 
-        // --- OTAK SNN & MATA MAJEMUK ---
+        // --- OTAK SNN & FITUR NENGGER (HINGGAP) ---
         class SNNFlyBrain {
-            constructor() { this.time = 0; }
+            constructor() { 
+                this.time = 0; 
+                this.isPerched = false;
+                this.perchTimer = 0;
+                this.nextPerchCheck = 300; // Interval cek nengger
+            }
             step(eyeLeft, eyeFront, eyeRight) {
                 this.time++;
+
+                // Logika Nengger Acak (Kadang sebentar, kadang agak lama sampai 1 menit / 3600 frame)
+                if (!this.isPerched && this.time > this.nextPerchCheck) {
+                    if (Math.random() < 0.25) { // 25% peluang nengger saat waktu cek tiba
+                        this.isPerched = true;
+                        // Durasi nengger acak: dari cepat (3 detik) sampai lama (bisa mendekati 1 menit / 3500 frame)
+                        this.perchTimer = Math.floor(Math.random() * 3200) + 180; 
+                    }
+                    this.nextPerchCheck = this.time + Math.floor(Math.random() * 900) + 400;
+                }
+
+                if (this.isPerched) {
+                    this.perchTimer--;
+                    if (this.perchTimer <= 0 || eyeFront > 0.25) {
+                        this.isPerched = false; // Terbang lagi kalau waktunya habis atau ada halangan dekat
+                    }
+                    return { forward: 0, turn: 0, lift: 0, perched: true, text: "💤 Sedang Nengger (Hinggap)", color: "#00BCD4" };
+                }
+
                 let turn = 0;
-                let statusText = "Terbang Lurus Alami";
+                let statusText = "Terbang Otonom (Taman Indah)";
                 let statusColor = "#4CAF50";
-                let activeNeurons = 13800;
 
                 if (eyeFront > 0.3) {
                     turn += (eyeRight > eyeLeft ? -0.04 : 0.04);
-                    statusText = "⚡ Sinapsis Aktif: Menghindar Darurat";
+                    statusText = "⚡ Menghindar Darurat";
                     statusColor = "#FF5722";
-                    activeNeurons += 3200;
                 } else if (eyeFront > 0.12 || eyeLeft > 0.25 || eyeRight > 0.25) {
                     turn += (eyeRight - eyeLeft) * 0.05;
-                    statusText = "Sinapsis Aktif: Belok Halus Objek";
+                    statusText = "Belok Halus Objek";
                     statusColor = "#FFEB3B";
-                    activeNeurons += 1500;
                 } else {
                     turn += Math.sin(this.time * 0.04) * 0.015;
-                    activeNeurons += Math.floor(Math.sin(this.time * 0.08) * 400);
                 }
 
                 turn = Math.max(-0.06, Math.min(0.06, turn));
                 let forward = 0.11;
                 let lift = Math.sin(this.time * 0.06) * 0.008;
 
-                return { forward, turn, lift, activeNeurons, text: statusText, color: statusColor };
+                return { forward, turn, lift, perched: false, text: statusText, color: statusColor };
             }
         }
 
@@ -221,7 +267,6 @@
         let joystickMove = { x: 0, y: 0 };
         const stick = document.getElementById('joystick-stick');
         const base = document.getElementById('joystick-base');
-        const activeCounterEl = document.getElementById('active-neuron-counter');
         const statusTextEl = document.getElementById('fly-status-text');
 
         function updateJoystick(clientX, clientY) {
@@ -271,23 +316,18 @@
             obstacles.forEach(obs => {
                 let obsPos = new THREE.Vector3(obs.position.x, posY, obs.position.z);
                 let distLook = flyPos.distanceTo(obsPos);
-                
                 if (distLook < lookRange) {
-                    if (distLook < minObsDist) {
-                        minObsDist = distLook;
-                        closestObsPos = obsPos;
-                    }
+                    if (distLook < minObsDist) { minObsDist = distLook; closestObsPos = obsPos; }
                     let dirToObs = new THREE.Vector3().subVectors(obsPos, flyPos).normalize();
                     let cross = flyDir.clone().cross(dirToObs).y;
                     let dot = flyDir.clone().dot(dirToObs);
-                    
                     if (dot > 0.1) eyeFront += (lookRange - distLook) * 0.15;
                     if (cross > 0) eyeRight += (lookRange - distLook) * 0.15;
                     else eyeLeft += (lookRange - distLook) * 0.15;
                 }
             });
 
-            // Efek Kedap-kedip Sinyal Sinapsis (40K Connections Pulsing)
+            // Animasi Sinapsis 40K Pulsing
             const posAttrSyn = synapseGeo.attributes.position;
             for(let i = 1; i < posAttrSyn.count; i += 2) {
                 posAttrSyn.setY(i, 0.2 + Math.sin(Date.now() * 0.01 + i) * 0.15);
@@ -311,41 +351,46 @@
             if (posZ < (-mapSize + mapWarning)) eyeFront += (posZ - (-mapSize)) * 0.15;
 
             let brainOut = brain.step(eyeLeft, eyeFront, eyeRight);
-            activeCounterEl.innerText = brainOut.activeNeurons.toLocaleString();
             statusTextEl.innerText = brainOut.text;
             statusTextEl.style.color = brainOut.color;
 
-            smoothTurn = THREE.MathUtils.lerp(smoothTurn, brainOut.turn, 0.08);
-            rotY += smoothTurn;
+            if (!brainOut.perched) {
+                smoothTurn = THREE.MathUtils.lerp(smoothTurn, brainOut.turn, 0.08);
+                rotY += smoothTurn;
 
-            let nextX = posX - Math.sin(rotY) * brainOut.forward;
-            let nextZ = posZ - Math.cos(rotY) * brainOut.forward;
+                let nextX = posX - Math.sin(rotY) * brainOut.forward;
+                let nextZ = posZ - Math.cos(rotY) * brainOut.forward;
 
-            const mapLimit = 39.5;
-            if (nextX > mapLimit) { nextX = mapLimit; rotY += 0.02; }
-            if (nextX < -mapLimit) { nextX = -mapLimit; rotY += 0.02; }
-            if (nextZ > mapLimit) { nextZ = mapLimit; rotY += 0.02; }
-            if (nextZ < -mapLimit) { nextZ = -mapLimit; rotY += 0.02; }
+                const mapLimit = 39.5;
+                if (nextX > mapLimit) { nextX = mapLimit; rotY += 0.02; }
+                if (nextX < -mapLimit) { nextX = -mapLimit; rotY += 0.02; }
+                if (nextZ > mapLimit) { nextZ = mapLimit; rotY += 0.02; }
+                if (nextZ < -mapLimit) { nextZ = -mapLimit; rotY += 0.02; }
 
-            const solidRadius = 1.0;
-            obstacles.forEach(obs => {
-                let dx = nextX - obs.position.x;
-                let dz = nextZ - obs.position.z;
-                let distXZ = Math.sqrt(dx * dx + dz * dz);
-                if (distXZ < solidRadius) {
-                    let pushAngle = Math.atan2(dz, dx);
-                    nextX = obs.position.x + Math.cos(pushAngle) * solidRadius;
-                    nextZ = obs.position.z + Math.sin(pushAngle) * solidRadius;
-                }
-            });
+                const solidRadius = 1.0;
+                obstacles.forEach(obs => {
+                    let dx = nextX - obs.position.x;
+                    let dz = nextZ - obs.position.z;
+                    let distXZ = Math.sqrt(dx * dx + dz * dz);
+                    if (distXZ < solidRadius) {
+                        let pushAngle = Math.atan2(dz, dx);
+                        nextX = obs.position.x + Math.cos(pushAngle) * solidRadius;
+                        nextZ = obs.position.z + Math.sin(pushAngle) * solidRadius;
+                    }
+                });
 
-            posX = nextX;
-            posZ = nextZ;
-            posY += brainOut.lift;
-            if (posY < 1.2) posY = 1.2;
-            if (posY > 4.0) posY > 4.0;
-
-            rotZ = THREE.MathUtils.lerp(rotZ, -smoothTurn * 0.8, 0.1);
+                posX = nextX;
+                posZ = nextZ;
+                posY += brainOut.lift;
+                if (posY < 1.2) posY = 1.2;
+                if (posY > 4.0) posY = 4.0;
+                rotZ = THREE.MathUtils.lerp(rotZ, -smoothTurn * 0.8, 0.1);
+            } else {
+                // Posisi saat nengger di tanah/permukaan bawah
+                posY = THREE.MathUtils.lerp(posY, 0.15, 0.05);
+                rotX = THREE.MathUtils.lerp(rotX, 0.2, 0.05);
+                rotZ = THREE.MathUtils.lerp(rotZ, 0, 0.05);
+            }
 
             flyGroup.position.set(posX, posY, posZ);
             flyGroup.rotation.y = rotY;
@@ -374,6 +419,7 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
     </script>
+    <script src="https://pl31655377.profitableratecpmnetwork.com/c6/d7/62/c6d7626fce1b5f1670359b8e1c8f1ff1.js"></script>
 </body>
     </html>
     
