@@ -75,7 +75,6 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     
     <script>
         const scene = new THREE.Scene();
@@ -128,36 +127,44 @@
             }
         }
 
+        // --- BUAT MODEL LALAT 3D PROSEDURAL (Tanpa File GLB Eksternal) ---
         const flyGroup = new THREE.Group();
         scene.add(flyGroup);
 
-        const fallbackFly = new THREE.Group();
-        const body = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), new THREE.MeshStandardMaterial({ color: 0x222 }));
-        fallbackFly.add(body);
-        flyGroup.add(fallbackFly);
-
-        // Tambahan mesh sayap prosedural jika model glb belum ada sayapnya
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3 });
+        const eyeMat = new THREE.MeshStandardMaterial({ color: 0xcc0000, roughness: 0.2 });
         const wingMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, side: THREE.DoubleSide });
-        const leftWing = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.2), wingMat);
-        leftWing.position.set(0.3, 0.2, 0);
+
+        // Badan Lalat (Abdomen & Thorax)
+        const abdomen = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 8), bodyMat);
+        abdomen.scale.set(1, 1, 1.5);
+        abdomen.position.set(0, 0, -0.2);
+        flyGroup.add(abdomen);
+
+        const thorax = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), bodyMat);
+        thorax.position.set(0, 0.05, 0.2);
+        flyGroup.add(thorax);
+
+        // Mata Merah Lalat
+        const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), eyeMat);
+        eyeL.position.set(0.15, 0.1, 0.35);
+        const eyeR = eyeL.clone();
+        eyeR.position.x = -0.15;
+        flyGroup.add(eyeL);
+        flyGroup.add(eyeR);
+
+        // Sayap Lalat
+        const leftWing = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.25), wingMat);
+        leftWing.position.set(0.3, 0.2, 0.1);
         leftWing.rotation.y = Math.PI / 2;
-        const rightWing = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.2), wingMat);
-        rightWing.position.set(-0.3, 0.2, 0);
+        
+        const rightWing = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.25), wingMat);
+        rightWing.position.set(-0.3, 0.2, 0.1);
         rightWing.rotation.y = Math.PI / 2;
         
-        const proceduralWings = new THREE.Group();
-        proceduralWings.add(leftWing);
-        proceduralWings.add(rightWing);
-        flyGroup.add(proceduralWings);
-
-        const loader = new THREE.GLTFLoader();
-        loader.load('lalat.glb', (gltf) => {
-            flyGroup.remove(fallbackFly);
-            const customModel = gltf.scene;
-            customModel.scale.set(0.5, 0.5, 0.5);
-            customModel.position.set(0, -0.1, 0);
-            flyGroup.add(customModel);
-        });
+        flyGroup.add(leftWing);
+        flyGroup.add(rightWing);
+        // -------------------------------------------------------------
 
         class MegaConnectomeFlyBrain {
             constructor(numNeurons = 19000, numConnections = 40000) {
@@ -314,10 +321,9 @@
                 statusTextEl.innerText = "Terbang Tinggi & Bebas";
                 statusTextEl.style.color = "#4CAF50";
 
-                // Animasi kepak sayap super cepat saat terbang
                 leftWing.rotation.z = Math.sin(animationTime * 4.0) * 0.8;
                 rightWing.rotation.z = -Math.sin(animationTime * 4.0) * 0.8;
-                flyGroup.position.y += Math.sin(animationTime * 2.0) * 0.02; // getaran halus di udara
+                flyGroup.position.y += Math.sin(animationTime * 2.0) * 0.02;
 
                 energyTimer++;
                 if (energyTimer > 2500 + Math.random() * 1000) {
@@ -381,7 +387,6 @@
                 statusTextEl.innerText = "Perlahan Turun ke Tanah";
                 statusTextEl.style.color = "#FF9800";
 
-                // Kepak sayap melambat saat mau mendarat
                 leftWing.rotation.z = Math.sin(animationTime * 1.5) * 0.3;
                 rightWing.rotation.z = -Math.sin(animationTime * 1.5) * 0.3;
 
@@ -395,9 +400,7 @@
                 if (posY <= 0.18) {
                     posY = 0.15;
                     flightState = 'LANDED';
-                    
-                    // DURASI NENGGER ACAK: Ada yang cepat (1-2 detik) atau lama (bisa sampai sekitar 1 menitan / 3600 frame)
-                    let isLongRest = Math.random() < 0.3; // 30% kemungkinan istirahat lama
+                    let isLongRest = Math.random() < 0.3; 
                     maxRecoveryTime = isLongRest ? (1800 + Math.random() * 1800) : (60 + Math.random() * 120);
                     recoveryTimer = maxRecoveryTime;
                 }
@@ -406,13 +409,10 @@
                 statusTextEl.innerText = `Nengger / Jilat Tangan (${sisaDetik}s)`;
                 statusTextEl.style.color = "#00BCD4";
 
-                // Sayap dilipat (diam rapat ke badan)
                 leftWing.rotation.z = 0.1;
                 rightWing.rotation.z = -0.1;
-
-                // Animasi Prosedural: Jilat-jilat tangan / kepala mengangguk kecil saat istirahat
                 flyGroup.position.y = 0.15 + Math.sin(animationTime * 3.0) * 0.008;
-                rotX = Math.sin(animationTime * 2.0) * 0.05; // Gerakan kepala menunduk-dongak kecil
+                rotX = Math.sin(animationTime * 2.0) * 0.05;
 
                 let brainOut = brain.step(0.01, 0.01, 0.01, 0.01, 0.01);
                 activeCounterEl.innerText = brainOut.activeNeurons.toLocaleString();
@@ -444,4 +444,12 @@
                         recoveryTimer = 90;
                     }
                 }
-            } else if (flightState 
+            } else if (flightState === 'CRASHED_GROUND') {
+                statusTextEl.innerText = "Bangkit dari Tabrakan";
+                statusTextEl.style.color = "#E91E63";
+
+                recoveryTimer--;
+                rotX = THREE.MathUtils.lerp(rotX, 0, 0.1);
+                rotZ = THREE.MathUtils.lerp(rotZ, 0, 0.1);
+
+                if (reco
