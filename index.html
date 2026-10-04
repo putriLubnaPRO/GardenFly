@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>The Amazing Digital Fly - Sharp Vision SNN</title>
+    <title>The Amazing Digital Fly - Balanced SNN</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -46,8 +46,8 @@
         <h3>🪰 The Amazing Digital Fly</h3>
         <p>Total SNN: <span class="neuron-glow">19.000</span> Neuron</p>
         <p>Koneksi Sinapsis: <span class="neuron-glow">40.000</span></p>
-        <p>Neuron Menyala: <span id="active-neuron-counter" class="neuron-glow">15.800</span> / 19K</p>
-        <p>Insting: <span id="fly-status-text" style="color: #4CAF50;">Mata Tajam & Responsif</span></p>
+        <p>Neuron Menyala: <span id="active-neuron-counter" class="neuron-glow">14.500</span> / 19K</p>
+        <p>Insting: <span id="fly-status-text" style="color: #4CAF50;">Terbang Santai & Natural</span></p>
     </div>
 
     <div id="ad-box">
@@ -119,7 +119,7 @@
         wallGroup.add(wallNorth, wallSouth, wallEast, wallWest);
         scene.add(wallGroup);
 
-        // --- POHON REALISTIS ---
+        // --- POHON DI DALAM MAP ---
         const obstacles = [];
         const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 });
         const leavesMat = new THREE.MeshStandardMaterial({ color: 0x2e8b57, roughness: 0.8 });
@@ -159,32 +159,31 @@
             flyGroup.add(customModel);
         });
 
-        // --- UPGRADE OTAK SNN: Mata Tajam & Keputusan Tegas ---
-        class SharpFlyBrain {
+        // --- OTAK SNN SEIMBANG (Tidak Terlalu Sensitif) ---
+        class BalancedFlyBrain {
             constructor() {
                 this.energy = 0;
             }
             step(eyeLeft, eyeFront, eyeRight) {
                 this.energy++;
                 
-                // Otak memproses sinyal mata dengan bobot lebih tegas (tidak ragu-ragu)
-                let turn = (eyeRight - eyeLeft) * 0.35; 
+                // Bobot belok dibuat lebih moderat agar tidak kaget-kagetan
+                let turn = (eyeRight - eyeLeft) * 0.18; 
                 
-                if (eyeFront > 0.1) {
-                    // Jika depan terhalang, langsung ambil keputusan belok tajam ke kiri/kanan
-                    turn += (eyeRight > eyeLeft ? 0.85 : -0.85);
+                if (eyeFront > 0.3) {
+                    turn += (eyeRight > eyeLeft ? 0.45 : -0.45);
                 } else {
-                    turn += (Math.random() - 0.5) * 0.08;
+                    turn += (Math.random() - 0.5) * 0.06;
                 }
                 
-                let forward = 0.18 + Math.random() * 0.02;
-                let lift = (Math.random() - 0.48) * 0.015;
-                let activeNeurons = Math.floor(15000 + Math.sin(this.energy * 0.15) * 2000 + Math.random() * 1000);
+                let forward = 0.16 + Math.random() * 0.02;
+                let lift = (Math.random() - 0.48) * 0.012;
+                let activeNeurons = Math.floor(14000 + Math.sin(this.energy * 0.1) * 1800 + Math.random() * 800);
                 return { forward, turn, lift, activeNeurons };
             }
         }
 
-        const brain = new SharpFlyBrain();
+        const brain = new BalancedFlyBrain();
 
         let posX = 0, posY = 2.0, posZ = 0;
         let rotY = 0, rotX = 0, rotZ = 0;
@@ -192,7 +191,7 @@
         let instinctTimer = 0;
 
         let cameraAngleX = 0, cameraAngleY = 0;
-        let smoothTurn = 0, smoothForward = 0.18;
+        let smoothTurn = 0, smoothForward = 0.16;
 
         const activeCounterEl = document.getElementById('active-neuron-counter');
         const statusTextEl = document.getElementById('fly-status-text');
@@ -206,7 +205,7 @@
                 flightState = 'FLYING';
                 instinctTimer = 0;
                 posY += 0.8;
-                rotY += (Math.random() - 0.5) * 1.5;
+                rotY += (Math.random() - 0.5) * 1.2;
             }
         }
 
@@ -251,7 +250,7 @@
             requestAnimationFrame(animate);
 
             if (flightState === 'FLYING') {
-                statusTextEl.innerText = "Terbang Cerdas & Mata Tajam";
+                statusTextEl.innerText = "Terbang Santai & Natural";
                 statusTextEl.style.color = "#4CAF50";
 
                 instinctTimer++;
@@ -259,36 +258,37 @@
                 let flyPos = new THREE.Vector3(posX, posY, posZ);
                 let flyDir = new THREE.Vector3(-Math.sin(rotY), 0, -Math.cos(rotY));
 
-                // --- SENSOR MATA LALAT (Raycast / Jarak Pandang Aktif) ---
+                // --- SENSOR MATA SEIMBANG (Jarak Pandang Moderat) ---
                 let eyeLeft = 0.0, eyeFront = 0.0, eyeRight = 0.0;
+                let lookRange = 5.5; // Diturunkan dari 8.5 supaya tidak terlalu cepat kaget
 
                 obstacles.forEach(obs => {
                     let obsPos = new THREE.Vector3(obs.position.x, posY, obs.position.z);
                     let distLook = flyPos.distanceTo(obsPos);
                     
-                    if (distLook < 8.5) { // Jangkauan mata lebih jauh
+                    if (distLook < lookRange) {
                         let dirToObs = new THREE.Vector3().subVectors(obsPos, flyPos).normalize();
                         let cross = flyDir.clone().cross(dirToObs).y;
                         let dot = flyDir.clone().dot(dirToObs);
                         
-                        if (dot > 0.2) eyeFront += (8.5 - distLook) * 0.8;
-                        if (cross > 0) eyeRight += (8.5 - distLook) * 0.8;
-                        else eyeLeft += (8.5 - distLook) * 0.8;
+                        if (dot > 0.2) eyeFront += (lookRange - distLook) * 0.4;
+                        if (cross > 0) eyeRight += (lookRange - distLook) * 0.4;
+                        else eyeLeft += (lookRange - distLook) * 0.4;
                     }
                 });
 
-                // Deteksi dinding kaca batas map dengan mata lalat
-                const mapWarning = 7.0;
-                if (posX > (mapSize - mapWarning)) eyeRight += (mapSize - posX) * 0.5;
-                if (posX < (-mapSize + mapWarning)) eyeLeft += (posX - (-mapSize)) * 0.5;
-                if (posZ > (mapSize - mapWarning)) eyeFront += (mapSize - posZ) * 0.5;
-                if (posZ < (-mapSize + mapWarning)) eyeFront += (posZ - (-mapSize)) * 0.5;
+                // Deteksi dinding kaca batas map yang lebih pas
+                const mapWarning = 5.0;
+                if (posX > (mapSize - mapWarning)) eyeRight += (mapSize - posX) * 0.3;
+                if (posX < (-mapSize + mapWarning)) eyeLeft += (posX - (-mapSize)) * 0.3;
+                if (posZ > (mapSize - mapWarning)) eyeFront += (mapSize - posZ) * 0.3;
+                if (posZ < (-mapSize + mapWarning)) eyeFront += (posZ - (-mapSize)) * 0.3;
 
                 let brainOut = brain.step(eyeLeft, eyeFront, eyeRight);
                 activeCounterEl.innerText = brainOut.activeNeurons.toLocaleString();
 
                 let targetTurn = brainOut.turn;
-                smoothTurn = THREE.MathUtils.lerp(smoothTurn, targetTurn, 0.25); // Belok lebih cepat & responsif
+                smoothTurn = THREE.MathUtils.lerp(smoothTurn, targetTurn, 0.10); // Lerp diperhalus agar belokan luwes
                 smoothForward = THREE.MathUtils.lerp(smoothForward, brainOut.forward, 0.15);
 
                 rotY += smoothTurn;
@@ -307,16 +307,16 @@
                         let pushAngle = Math.atan2(dz, dx);
                         nextX = obs.position.x + Math.cos(pushAngle) * solidRadius;
                         nextZ = obs.position.z + Math.sin(pushAngle) * solidRadius;
-                        rotY += 0.8; // Keputusan menghindar darurat yang tegas
+                        rotY += 0.4; // Menghindar santai
                     }
                 });
 
                 // --- BATAS MAP KACA GELAP ---
                 const mapLimit = 43;
-                if (nextX > mapLimit) { nextX = mapLimit; rotY += 1.8; }
-                if (nextX < -mapLimit) { nextX = -mapLimit; rotY += 1.8; }
-                if (nextZ > mapLimit) { nextZ = mapLimit; rotY += 1.8; }
-                if (nextZ < -mapLimit) { nextZ = -mapLimit; rotY += 1.8; }
+                if (nextX > mapLimit) { nextX = mapLimit; rotY += 1.0; }
+                if (nextX < -mapLimit) { nextX = -mapLimit; rotY += 1.0; }
+                if (nextZ > mapLimit) { nextZ = mapLimit; rotY += 1.0; }
+                if (nextZ < -mapLimit) { nextZ = -mapLimit; rotY += 1.0; }
 
                 posX = nextX;
                 posZ = nextZ;
