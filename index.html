@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>The Amazing Digital Fly - Relaxed SNN</title>
+    <title>The Amazing Digital Fly - Realistic</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -47,7 +47,7 @@
         <p>Total SNN: <span class="neuron-glow">19.000</span> Neuron</p>
         <p>Koneksi Sinapsis: <span class="neuron-glow">40.000</span></p>
         <p>Neuron Menyala: <span id="active-neuron-counter" class="neuron-glow">13.900</span> / 19K</p>
-        <p>Insting: <span id="fly-status-text" style="color: #4CAF50;">Terbang Super Santai</span></p>
+        <p>Insting: <span id="fly-status-text" style="color: #4CAF50;">Terbang Alami (Mirip Asli)</span></p>
     </div>
 
     <div id="ad-box">
@@ -150,31 +150,50 @@
             flyGroup.add(customModel);
         });
 
-        // --- OTAK SNN SUPER SANTAI (Sensitivitas Diturunkan Jauh) ---
-        class RelaxedFlyBrain {
+        // --- OTAK SNN LALAT ALAMI (Mirip Asli) ---
+        class RealisticFlyBrain {
             constructor() {
-                this.energy = 0;
+                this.time = 0;
+                this.hoverMode = false;
+                this.hoverTimer = 0;
             }
             step(eyeLeft, eyeFront, eyeRight) {
-                this.energy++;
-                
-                // Bobot belok sangat kecil agar gerakannya mengalir mulus
-                let turn = (eyeRight - eyeLeft) * 0.08; 
-                
-                if (eyeFront > 0.4) {
-                    turn += (eyeRight > eyeLeft ? 0.25 : -0.25);
+                this.time++;
+
+                // Simulasi lalat suka "berhenti sejenak" (hovering) atau terbang lagi secara random
+                if (this.hoverTimer > 0) {
+                    this.hoverTimer--;
+                    this.hoverMode = true;
                 } else {
-                    turn += (Math.random() - 0.5) * 0.04;
+                    if (Math.random() < 0.01) {
+                        this.hoverTimer = Math.floor(Math.random() * 50) + 20; // Diam beberapa detik
+                    } else {
+                        this.hoverMode = false;
+                    }
+                }
+
+                let turn = (eyeRight - eyeLeft) * 0.1;
+                
+                // Jika mau nabrak pohon, belok lebih tajam khas lalat kaget
+                if (eyeFront > 0.3) {
+                    turn += (eyeRight > eyeLeft ? 0.35 : -0.35);
+                } else {
+                    // Gerakan zig-zag acak khas lalat asli
+                    turn += (Math.sin(this.time * 0.1) * 0.05) + ((Math.random() - 0.5) * 0.08);
                 }
                 
-                let forward = 0.15 + Math.random() * 0.015;
-                let lift = (Math.random() - 0.48) * 0.01;
-                let activeNeurons = Math.floor(13500 + Math.sin(this.energy * 0.08) * 1500 + Math.random() * 600);
-                return { forward, turn, lift, activeNeurons };
+                // Kecepatan maju: Kalau lagi hover, kecepatannya 0 (diam di udara)
+                let forward = this.hoverMode ? 0.0 : (0.12 + Math.random() * 0.08);
+                
+                // Naik turun acak gelombang udara
+                let lift = Math.sin(this.time * 0.15) * 0.015 + (Math.random() - 0.5) * 0.02;
+                
+                let activeNeurons = Math.floor(13500 + Math.sin(this.time * 0.05) * 2000 + Math.random() * 800);
+                return { forward, turn, lift, activeNeurons, hover: this.hoverMode };
             }
         }
 
-        const brain = new RelaxedFlyBrain();
+        const brain = new RealisticFlyBrain();
 
         let posX = 0, posY = 2.0, posZ = 0;
         let rotY = 0, rotX = 0, rotZ = 0;
@@ -182,7 +201,7 @@
         let instinctTimer = 0;
 
         let cameraAngleX = 0, cameraAngleY = 0;
-        let smoothTurn = 0, smoothForward = 0.15;
+        let smoothTurn = 0, smoothForward = 0.12;
 
         const activeCounterEl = document.getElementById('active-neuron-counter');
         const statusTextEl = document.getElementById('fly-status-text');
@@ -241,17 +260,13 @@
             requestAnimationFrame(animate);
 
             if (flightState === 'FLYING') {
-                statusTextEl.innerText = "Terbang Super Santai";
-                statusTextEl.style.color = "#4CAF50";
-
                 instinctTimer++;
 
                 let flyPos = new THREE.Vector3(posX, posY, posZ);
                 let flyDir = new THREE.Vector3(-Math.sin(rotY), 0, -Math.cos(rotY));
 
-                // --- SENSOR MATA SUPER SANTAI (Jarak Pandang Diperpendek) ---
                 let eyeLeft = 0.0, eyeFront = 0.0, eyeRight = 0.0;
-                let lookRange = 3.5; // Jauh lebih dekat baru dia "sadar" ada halangan, jadi gak gampang kaget
+                let lookRange = 4.0;
 
                 obstacles.forEach(obs => {
                     let obsPos = new THREE.Vector3(obs.position.x, posY, obs.position.z);
@@ -262,33 +277,37 @@
                         let cross = flyDir.clone().cross(dirToObs).y;
                         let dot = flyDir.clone().dot(dirToObs);
                         
-                        if (dot > 0.2) eyeFront += (lookRange - distLook) * 0.2;
-                        if (cross > 0) eyeRight += (lookRange - distLook) * 0.2;
-                        else eyeLeft += (lookRange - distLook) * 0.2;
+                        if (dot > 0.2) eyeFront += (lookRange - distLook) * 0.25;
+                        if (cross > 0) eyeRight += (lookRange - distLook) * 0.25;
+                        else eyeLeft += (lookRange - distLook) * 0.25;
                     }
                 });
 
-                // Deteksi dinding kaca batas map diperlambat
-                const mapWarning = 3.5;
-                if (posX > (mapSize - mapWarning)) eyeRight += (mapSize - posX) * 0.15;
-                if (posX < (-mapSize + mapWarning)) eyeLeft += (posX - (-mapSize)) * 0.15;
-                if (posZ > (mapSize - mapWarning)) eyeFront += (mapSize - posZ) * 0.15;
-                if (posZ < (-mapSize + mapWarning)) eyeFront += (posZ - (-mapSize)) * 0.15;
+                const mapWarning = 4.0;
+                if (posX > (mapSize - mapWarning)) eyeRight += (mapSize - posX) * 0.2;
+                if (posX < (-mapSize + mapWarning)) eyeLeft += (posX - (-mapSize)) * 0.2;
+                if (posZ > (mapSize - mapWarning)) eyeFront += (mapSize - posZ) * 0.2;
+                if (posZ < (-mapSize + mapWarning)) eyeFront += (posZ - (-mapSize)) * 0.2;
 
                 let brainOut = brain.step(eyeLeft, eyeFront, eyeRight);
                 activeCounterEl.innerText = brainOut.activeNeurons.toLocaleString();
 
-                let targetTurn = brainOut.turn;
-                // Lerp sangat kecil agar belokan mengalir lembut banget (tidak patah-patah)
-                smoothTurn = THREE.MathUtils.lerp(smoothTurn, targetTurn, 0.05); 
-                smoothForward = THREE.MathUtils.lerp(smoothForward, brainOut.forward, 0.1);
+                if (brainOut.hover) {
+                    statusTextEl.innerText = "Melayang (Hovering)";
+                    statusTextEl.style.color = "#FFEB3B";
+                } else {
+                    statusTextEl.innerText = "Terbang Alami";
+                    statusTextEl.style.color = "#4CAF50";
+                }
+
+                smoothTurn = THREE.MathUtils.lerp(smoothTurn, brainOut.turn, 0.1); 
+                smoothForward = THREE.MathUtils.lerp(smoothForward, brainOut.forward, 0.15);
 
                 rotY += smoothTurn;
                 
                 let nextX = posX - Math.sin(rotY) * smoothForward;
                 let nextZ = posZ - Math.cos(rotY) * smoothForward;
 
-                // --- TABRAKAN FISIK POHON ---
                 const solidRadius = 0.9;
                 obstacles.forEach(obs => {
                     let dx = nextX - obs.position.x;
@@ -299,31 +318,35 @@
                         let pushAngle = Math.atan2(dz, dx);
                         nextX = obs.position.x + Math.cos(pushAngle) * solidRadius;
                         nextZ = obs.position.z + Math.sin(pushAngle) * solidRadius;
-                        rotY += 0.2; // Menghindar perlahan
+                        rotY += 0.4; 
                     }
                 });
 
-                // --- BATAS MAP KACA GELAP ---
                 const mapLimit = 43;
-                if (nextX > mapLimit) { nextX = mapLimit; rotY += 0.6; }
-                if (nextX < -mapLimit) { nextX = -mapLimit; rotY += 0.6; }
-                if (nextZ > mapLimit) { nextZ = mapLimit; rotY += 0.6; }
-                if (nextZ < -mapLimit) { nextZ = -mapLimit; rotY += 0.6; }
+                if (nextX > mapLimit) { nextX = mapLimit; rotY += 0.8; }
+                if (nextX < -mapLimit) { nextX = -mapLimit; rotY += 0.8; }
+                if (nextZ > mapLimit) { nextZ = mapLimit; rotY += 0.8; }
+                if (nextZ < -mapLimit) { nextZ = -mapLimit; rotY += 0.8; }
 
                 posX = nextX;
                 posZ = nextZ;
                 posY += brainOut.lift;
 
                 if (posY <= 1.2) posY = 1.2;
-                if (posY >= 4.2) posY = 4.2;
+                if (posY >= 4.5) posY = 4.5;
 
-                if (instinctTimer > 450 && Math.random() < 0.003) {
+                // Efek miring badan (banking) pas lalatnya lagi belok biar kelihatan organik
+                rotZ = THREE.MathUtils.lerp(rotZ, -smoothTurn * 1.5, 0.1);
+                rotX = THREE.MathUtils.lerp(rotX, brainOut.lift * 2.0, 0.1);
+
+                if (instinctTimer > 500 && Math.random() < 0.002) {
                     flightState = 'DESCENDING_TO_LAND';
                 }
 
             } else if (flightState === 'DESCENDING_TO_LAND') {
-                statusTextEl.innerText = "Mencari Tempat Nengger";
+                statusTextEl.innerText = "Mendarat";
                 statusTextEl.style.color = "#FF9800";
+                rotZ = 0; rotX = 0;
 
                 posY -= 0.03;
                 activeCounterEl.innerText = "12.400";
@@ -337,11 +360,11 @@
                 statusTextEl.style.color = "#00BCD4";
                 activeCounterEl.innerText = "8.100";
 
-                if (Math.random() < 0.005) { 
+                if (Math.random() < 0.004) { 
                     flightState = 'FLYING';
                     instinctTimer = 0;
                     posY += 0.5; 
-                    rotY += (Math.random() - 0.5) * 1.0; 
+                    rotY += (Math.random() - 0.5) * 1.5; 
                 }
             }
 
@@ -372,4 +395,5 @@
         });
     </script>
 </body>
-</html>
+                                                                                        </html>
+    
