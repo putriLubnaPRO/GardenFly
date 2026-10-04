@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>The Amazing Digital Fly - 19K SNN Mega Brain</title>
+    <title>The Amazing Digital Fly - 19K SNN with Landing State</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -54,8 +54,8 @@
 
     <div id="info">
         <h3>🪰 The Amazing Digital Fly</h3>
-        <p>Otak SNN: 19.000 Neuron | 40.000 Koneksi</p>
-        <p>Status: Mega Connectome Aktif!</p>
+        <p>Otak SNN: 19K Neuron | Bisa Nengger</p>
+        <p>Status: Istirahat & Terbang</p>
     </div>
 
     <div id="game-over-text">
@@ -96,7 +96,6 @@
         ground.rotation.x = -Math.PI / 2;
         scene.add(ground);
 
-        // Pagar pembatas diperluas biar gak berasa kayak lem
         const fenceGroup = new THREE.Group();
         const fenceMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.8 });
         const mapSize = 50;
@@ -143,7 +142,6 @@
             flyGroup.add(customModel);
         });
 
-        // MEGA OTAK SNN: 19.000 NEURON & 40.000 KONEKSI
         class MegaConnectomeFlyBrain {
             constructor(numNeurons = 19000, numConnections = 40000) {
                 this.neurons = new Float32Array(numNeurons);
@@ -220,6 +218,7 @@
         let velocityY = 0;
         let flightState = 'FLYING'; 
         let recoveryTimer = 0;
+        let energyTimer = 0; // Timer buat atur kapan lalat nengger
 
         let cameraAngleX = 0, cameraAngleY = 0;
         let smoothTurn = 0, smoothForward = 0.16;
@@ -268,6 +267,12 @@
             requestAnimationFrame(animate);
 
             if (flightState === 'FLYING') {
+                energyTimer++;
+                // Tiap beberapa detik terbang, lalat pengen nengger sebentar ke tanah
+                if (energyTimer > 400 + Math.random() * 300) {
+                    flightState = 'DESCENDING_TO_LAND';
+                }
+
                 let leftSense = 0.01, rightSense = 0.01, frontSense = 0.01;
                 let upSense = 0.01, downSense = 0.01;
 
@@ -295,11 +300,11 @@
                     rotZ = (Math.random() - 0.5) * Math.PI;
                 }
 
-                // Batas map diperlebar jadi 48 supaya lapang
-                const limit = 48;
-                if (posX > limit || posX < -limit || posZ > limit || posZ < -limit) {
-                    flightState = 'FALLING';
-                }
+                const limit = 47;
+                if (posX > limit) { posX = limit; rotY += Math.PI; }
+                if (posX < -limit) { posX = -limit; rotY += Math.PI; }
+                if (posZ > limit) { posZ = limit; rotY += Math.PI; }
+                if (posZ < -limit) { posZ = -limit; rotY += Math.PI; }
 
                 let brainOut = brain.step(leftSense, rightSense, frontSense, upSense, downSense);
                 let obstacleAvoidance = (rightSense - leftSense) * 0.02;
@@ -319,6 +324,24 @@
                 if (posY <= groundLevel) posY = groundLevel;
                 if (posY >= 7.5) posY = 7.5;
 
+            } else if (flightState === 'DESCENDING_TO_LAND') {
+                // Lalat turun perlahan ke tanah buat nengger
+                posY -= 0.04;
+                rotX = THREE.MathUtils.lerp(rotX, 0, 0.1);
+                rotZ = THREE.MathUtils.lerp(rotZ, 0, 0.1);
+
+                if (posY <= 0.15) {
+                    posY = 0.15;
+                    flightState = 'LANDED';
+                    recoveryTimer = 180; // Nengger anteng selama beberapa detik
+                }
+            } else if (flightState === 'LANDED') {
+                recoveryTimer--;
+                // Lalat diam nengger di tanah
+                if (recoveryTimer <= 0) {
+                    flightState = 'FLYING';
+                    energyTimer = 0; // Reset timer energi
+                }
             } else if (flightState === 'FALLING') {
                 velocityY += 0.015;
                 posY -= velocityY;
