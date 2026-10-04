@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>The Amazing Digital Fly - 10K Genius SNN</title>
+    <title>The Amazing Digital Fly - Native Browser Reset</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -18,6 +18,18 @@
         }
         #info h3 { margin: 0 0 5px 0; color: #a8ffb2; font-size: 15px; }
         #info p { margin: 2px 0; }
+
+        /* Teks Status Game Over di Pojok / Tengah tanpa tombol */
+        #game-over-text {
+            position: absolute; top: 35%; left: 50%; transform: translate(-50%, -50%);
+            color: #ff4444; font-size: 26px; font-weight: bold; text-align: center;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.9); display: none; z-index: 20;
+            background: rgba(0,0,0,0.6); padding: 15px 30px; border-radius: 15px;
+            border: 2px solid #ff4444; pointer-events: none;
+        }
+        #game-over-text span {
+            display: block; font-size: 13px; color: #fff; margin-top: 5px; font-weight: normal;
+        }
 
         /* Kotak Iklan Monetisasi */
         #ad-box {
@@ -45,8 +57,14 @@
 
     <div id="info">
         <h3>🪰 The Amazing Digital Fly</h3>
-        <p>Otak Jenius SNN: 10.000 Neuron & Koneksi Kompleks</p>
-        <p>Status: Navigasi Super Luwes & Pagar Aktif</p>
+        <p>Otak SNN 10K + Gravitasi Fisika</p>
+        <p>Status: Hati-hati Jungkir Balik!</p>
+    </div>
+
+    <!-- Teks Pemberitahuan Saja (Tanpa Tombol) -->
+    <div id="game-over-text">
+        JUNGKIR BALIK! TERTELUNGKUP
+        <span>Silakan Refresh / Muat Ulang Browser untuk Mengulang</span>
     </div>
 
     <!-- KOTAK IKLAN -->
@@ -64,7 +82,7 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     
     <script>
-        // 1. SETUP DUNIA 3D (Kebun, Pagar, & Langit)
+        // 1. SETUP DUNIA 3D
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87CEEB);
         scene.fog = new THREE.FogExp2(0x87CEEB, 0.012);
@@ -79,7 +97,7 @@
         sunLight.position.set(30, 50, 20);
         scene.add(sunLight);
 
-        // Tanah
+        // Tanah & Pagar
         const ground = new THREE.Mesh(
             new THREE.PlaneGeometry(100, 100),
             new THREE.MeshStandardMaterial({ color: 0x3b7a57, roughness: 0.9 })
@@ -87,27 +105,20 @@
         ground.rotation.x = -Math.PI / 2;
         scene.add(ground);
 
-        // Pagar Pembatas Keliling Map (Ukuran 80x80)
         const fenceGroup = new THREE.Group();
         const fenceMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.8 });
         const mapSize = 40;
         
         for (let i = -mapSize; i <= mapSize; i += 5) {
-            let p1 = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), fenceMat);
-            p1.position.set(i, 1, mapSize);
-            let p2 = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), fenceMat);
-            p2.position.set(i, 1, -mapSize);
+            let p1 = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), fenceMat); p1.position.set(i, 1, mapSize);
+            let p2 = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), fenceMat); p2.position.set(i, 1, -mapSize);
             fenceGroup.add(p1); fenceGroup.add(p2);
-
-            let p3 = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), fenceMat);
-            p3.position.set(mapSize, 1, i);
-            let p4 = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), fenceMat);
-            p4.position.set(-mapSize, 1, i);
+            let p3 = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), fenceMat); p3.position.set(mapSize, 1, i);
+            let p4 = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), fenceMat); p4.position.set(-mapSize, 1, i);
             fenceGroup.add(p3); fenceGroup.add(p4);
         }
         scene.add(fenceGroup);
 
-        // Pohon-pohon di dalam map
         const trees = [];
         for (let i = 0; i < 18; i++) {
             const tree = new THREE.Mesh(
@@ -123,7 +134,7 @@
             }
         }
 
-        // 2. MODEL LALAT (.GLB DENGAN FALLBACK)
+        // 2. MODEL LALAT
         const flyGroup = new THREE.Group();
         scene.add(flyGroup);
 
@@ -141,7 +152,7 @@
             flyGroup.add(customModel);
         });
 
-        // 3. OTAK SUPER SNN: 10.000 NEURON & 12.000 SINOPSIS (Kapasitas Jenius)
+        // 3. OTAK SNN 10.000 NEURON
         class MegaConnectomeFlyBrain {
             constructor(numNeurons = 10000, numConnections = 12000) {
                 this.neurons = new Float32Array(numNeurons);
@@ -152,11 +163,10 @@
                 for (let i = 0; i < numNeurons; i++) {
                     this.neurons[i] = Math.random() * 0.1;
                     this.thresholds[i] = 1.5 + Math.random() * 0.8;
-                    this.leaks[i] = 0.68; // Kebocoran optimal agar memori saraf tidak overload
+                    this.leaks[i] = 0.68;
                     this.outputs[i] = 0;
                 }
 
-                // Struktur Sinapsis Cepat Menggunakan Uint32Array / Float32Array untuk Performa Tinggi
                 this.synapseFrom = new Int32Array(numConnections);
                 this.synapseTo = new Int32Array(numConnections);
                 this.synapseWeight = new Float32Array(numConnections);
@@ -166,21 +176,18 @@
                     this.synapseTo[c] = Math.floor(Math.random() * numNeurons);
                     this.synapseWeight[c] = (Math.random() - 0.5) * 0.04;
                 }
-
                 this.numNeurons = numNeurons;
                 this.numConnections = numConnections;
             }
 
             step(leftSense, rightSense, frontSense, upSense, downSense) {
-                // Input sensorik dimasukkan ke klaster neuron masukan
                 this.neurons[0] += leftSense * 0.5;
                 this.neurons[1] += rightSense * 0.5;
                 this.neurons[2] += frontSense * 0.6;
                 this.neurons[3] += upSense * 0.4;
                 this.neurons[4] += downSense * 0.4;
-                this.neurons[5] += 1.5; // Dorongan energi hidup
+                this.neurons[5] += 1.5;
 
-                // Propogasi Sinapsis Cepat
                 for (let c = 0; c < this.numConnections; c++) {
                     let src = this.synapseFrom[c];
                     if (this.outputs[src] > 0) {
@@ -189,17 +196,14 @@
                     }
                 }
 
-                // Pembaruan Tegangan Saraf
                 let motorForward = 0, motorTurn = 0, motorLift = 0;
-                const motorStartIdx = this.numNeurons - 500; // 500 neuron terakhir sebagai pusat kendali motorik
+                const motorStartIdx = this.numNeurons - 500;
 
                 for (let i = 0; i < this.numNeurons; i++) {
                     this.neurons[i] *= this.leaks[i];
                     if (this.neurons[i] >= this.thresholds[i]) {
                         this.outputs[i] = 1.0;
                         this.neurons[i] = 0.0;
-                        
-                        // Kumpulkan aktivitas motorik dari zona motorik
                         if (i >= motorStartIdx) {
                             if (i % 3 === 0) motorForward += 1.0;
                             else if (i % 3 === 1) motorTurn += 1.0;
@@ -220,12 +224,16 @@
 
         const brain = new MegaConnectomeFlyBrain(10000, 12000);
 
-        let posX = 0, posY = 0.15, posZ = 0;
-        let rotY = 0;
+        let posX = 0, posY = 2.0, posZ = 0;
+        let rotY = 0, rotX = 0, rotZ = 0;
+        let velocityY = 0;
+        let flightState = 'FLYING'; // 'FLYING', 'FALLING', 'CRASHED_GROUND', 'DEAD_FLIPPED'
+        let recoveryTimer = 0;
+
         let cameraAngleX = 0, cameraAngleY = 0;
         let smoothTurn = 0, smoothForward = 0.16;
 
-        // 4. KONTROL VIRTUAL JOYSTICK
+        // Joystick
         let joystickMove = { x: 0, y: 0 };
         const stick = document.getElementById('joystick-stick');
         const base = document.getElementById('joystick-base');
@@ -239,10 +247,8 @@
             const maxDist = 40;
             if (dist > maxDist) { x = (x / dist) * maxDist; y = (y / dist) * maxDist; }
             stick.style.transform = `translate(${x}px, ${y}px)`;
-            joystickMove.x = x / maxDist;
-            joystickMove.y = y / maxDist;
+            joystickMove.x = x / maxDist; joystickMove.y = y / maxDist;
         });
-
         base.addEventListener('touchend', () => {
             stick.style.transform = `translate(0px, 0px)`;
             joystickMove.x = 0; joystickMove.y = 0;
@@ -259,8 +265,7 @@
             const maxDist = 40;
             if (dist > maxDist) { x = (x / dist) * maxDist; y = (y / dist) * maxDist; }
             stick.style.transform = `translate(${x}px, ${y}px)`;
-            joystickMove.x = x / maxDist;
-            joystickMove.y = y / maxDist;
+            joystickMove.x = x / maxDist; joystickMove.y = y / maxDist;
         });
         window.addEventListener('mouseup', () => {
             if (!isMouseDown) return;
@@ -269,75 +274,94 @@
             joystickMove.x = 0; joystickMove.y = 0;
         });
 
-        // 5. LOOP UTAMA DENGAN OTAK 10.000 NEURON
+        // LOOP UTAMA
         function animate() {
             requestAnimationFrame(animate);
 
-            let leftSense = 0.01, rightSense = 0.01, frontSense = 0.01;
-            let upSense = 0.01, downSense = 0.01;
+            if (flightState === 'FLYING') {
+                let leftSense = 0.01, rightSense = 0.01, frontSense = 0.01;
+                let upSense = 0.01, downSense = 0.01;
 
-            let flyPos = new THREE.Vector3(posX, posY, posZ);
-            let flyDir = new THREE.Vector3(-Math.sin(rotY), 0, -Math.cos(rotY));
+                let flyPos = new THREE.Vector3(posX, posY, posZ);
+                let flyDir = new THREE.Vector3(-Math.sin(rotY), 0, -Math.cos(rotY));
 
-            // A. Pemindaian Rintangan Pohon Super Sensitif
-            trees.forEach(tree => {
-                let dist = flyPos.distanceTo(tree.position);
-                if (dist < 7) {
-                    let dirToTree = new THREE.Vector3().subVectors(tree.position, flyPos).normalize();
-                    let cross = flyDir.clone().cross(dirToTree).y;
-                    let dot = flyDir.clone().dot(dirToTree);
+                let isHit = false;
+                trees.forEach(tree => {
+                    let dist = flyPos.distanceTo(tree.position);
+                    if (dist < 2.2) { isHit = true; }
+                    if (dist < 7) {
+                        let dirToTree = new THREE.Vector3().subVectors(tree.position, flyPos).normalize();
+                        let cross = flyDir.clone().cross(dirToTree).y;
+                        let dot = flyDir.clone().dot(dirToTree);
+                        if (dot > 0.2) frontSense += (7 - dist) * 0.4;
+                        if (cross > 0) rightSense += (7 - dist) * 0.4;
+                        else leftSense += (7 - dist) * 0.4;
+                    }
+                });
 
-                    if (dot > 0.2) frontSense += (7 - dist) * 0.4;
-                    if (cross > 0) rightSense += (7 - dist) * 0.4;
-                    else leftSense += (7 - dist) * 0.4;
+                if (isHit) {
+                    flightState = 'FALLING';
+                    velocityY = 0.05;
+                    rotX = (Math.random() - 0.5) * Math.PI;
+                    rotZ = (Math.random() - 0.5) * Math.PI;
                 }
-            });
 
-            // B. Deteksi Pagar & Ketinggian
-            const limit = 38;
-            if (posX > limit) rightSense += 1.0;
-            if (posX < -limit) leftSense += 1.0;
-            if (posZ > limit) frontSense += 1.0;
-            if (posZ < -limit) frontSense += 1.0;
+                const limit = 38;
+                if (posX > limit || posX < -limit || posZ > limit || posZ < -limit) {
+                    flightState = 'FALLING';
+                }
 
-            if (posY < 0.6) downSense += 0.6; // Ingin hinggap
-            if (posY > 6.5) upSense += 0.6;   // Terlalu tinggi
+                let brainOut = brain.step(leftSense, rightSense, frontSense, upSense, downSense);
+                let obstacleAvoidance = (rightSense - leftSense) * 0.02;
+                let targetTurn = brainOut.turn + obstacleAvoidance;
 
-            // Proses Berpikir 10.000 Neuron
-            let brainOut = brain.step(leftSense, rightSense, frontSense, upSense, downSense);
+                if (frontSense > 0.25) targetTurn += 0.12;
 
-            let obstacleAvoidance = (rightSense - leftSense) * 0.02;
-            let targetTurn = brainOut.turn + obstacleAvoidance;
+                smoothTurn = THREE.MathUtils.lerp(smoothTurn, targetTurn, 0.08);
+                smoothForward = THREE.MathUtils.lerp(smoothForward, brainOut.forward, 0.08);
 
-            if (frontSense > 0.25) {
-                targetTurn += 0.12; // Refleks menghindar darurat yang lebih pintar
+                rotY += smoothTurn;
+                posX -= Math.sin(rotY) * smoothForward;
+                posZ -= Math.cos(rotY) * smoothForward;
+                posY += brainOut.lift;
+
+                const groundLevel = 0.15;
+                if (posY <= groundLevel) posY = groundLevel;
+                if (posY >= 7.5) posY = 7.5;
+
+            } else if (flightState === 'FALLING') {
+                velocityY += 0.015;
+                posY -= velocityY;
+                rotX += 0.05;
+
+                if (posY <= 0.15) {
+                    posY = 0.15;
+                    let isFlipped = Math.abs(rotX % Math.PI) > 1.0 || Math.abs(rotZ) > 1.0;
+
+                    if (isFlipped) {
+                        flightState = 'DEAD_FLIPPED';
+                        document.getElementById('game-over-text').style.display = 'block'; // Munculkan teks info saja
+                    } else {
+                        flightState = 'CRASHED_GROUND';
+                        recoveryTimer = 120;
+                    }
+                }
+            } else if (flightState === 'CRASHED_GROUND') {
+                recoveryTimer--;
+                rotX = THREE.MathUtils.lerp(rotX, 0, 0.1);
+                rotZ = THREE.MathUtils.lerp(rotZ, 0, 0.1);
+
+                if (recoveryTimer <= 0) {
+                    flightState = 'FLYING';
+                }
             }
+            // Jika 'DEAD_FLIPPED', lalat diam total di tanah dan pemain merefresh browser secara mandiri.
 
-            smoothTurn = THREE.MathUtils.lerp(smoothTurn, targetTurn, 0.08);
-            smoothForward = THREE.MathUtils.lerp(smoothForward, brainOut.forward, 0.08);
-
-            rotY += smoothTurn;
-
-            // Pergerakan
-            posX -= Math.sin(rotY) * smoothForward;
-            posZ -= Math.cos(rotY) * smoothForward;
-            posY += brainOut.lift;
-
-            // Pembatas Fisik Mutlak Pagar & Tanah
-            const absoluteLimit = 39;
-            posX = Math.max(-absoluteLimit, Math.min(absoluteLimit, posX));
-            posZ = Math.max(-absoluteLimit, Math.min(absoluteLimit, posZ));
-
-            const groundLevel = 0.15; 
-            const skyLimit = 7.5;
-            if (posY < groundLevel) { posY = groundLevel; }
-            if (posY > skyLimit) { posY = skyLimit; }
-
-            // Terapkan ke Model Lalat
             flyGroup.position.set(posX, posY, posZ);
             flyGroup.rotation.y = rotY;
+            flyGroup.rotation.x = rotX;
+            flyGroup.rotation.z = rotZ;
 
-            // Kamera Joystick
             cameraAngleY -= joystickMove.x * 0.03;
             cameraAngleX += joystickMove.y * 0.02;
             cameraAngleX = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, cameraAngleX));
