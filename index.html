@@ -136,6 +136,20 @@
         fallbackFly.add(body);
         flyGroup.add(fallbackFly);
 
+        // Tambahan mesh sayap prosedural jika model glb belum ada sayapnya
+        const wingMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, side: THREE.DoubleSide });
+        const leftWing = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.2), wingMat);
+        leftWing.position.set(0.3, 0.2, 0);
+        leftWing.rotation.y = Math.PI / 2;
+        const rightWing = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.2), wingMat);
+        rightWing.position.set(-0.3, 0.2, 0);
+        rightWing.rotation.y = Math.PI / 2;
+        
+        const proceduralWings = new THREE.Group();
+        proceduralWings.add(leftWing);
+        proceduralWings.add(rightWing);
+        flyGroup.add(proceduralWings);
+
         const loader = new THREE.GLTFLoader();
         loader.load('lalat.glb', (gltf) => {
             flyGroup.remove(fallbackFly);
@@ -153,9 +167,9 @@
                 this.outputs = new Float32Array(numNeurons);
 
                 for (let i = 0; i < numNeurons; i++) {
-                    this.neurons[i] = Math.random() * 0.2;
-                    this.thresholds[i] = 1.2 + Math.random() * 0.8;
-                    this.leaks[i] = 0.75;
+                    this.neurons[i] = Math.random() * 0.5;
+                    this.thresholds[i] = 0.8 + Math.random() * 0.6;
+                    this.leaks[i] = 0.85;
                     this.outputs[i] = 0;
                 }
 
@@ -166,25 +180,24 @@
                 for (let c = 0; c < numConnections; c++) {
                     this.synapseFrom[c] = Math.floor(Math.random() * numNeurons);
                     this.synapseTo[c] = Math.floor(Math.random() * numNeurons);
-                    this.synapseWeight[c] = (Math.random() - 0.5) * 0.04;
+                    this.synapseWeight[c] = (Math.random() - 0.45) * 0.08;
                 }
                 this.numNeurons = numNeurons;
                 this.numConnections = numConnections;
             }
 
             step(leftSense, rightSense, frontSense, upSense, downSense) {
-                // Beri background noise agar selalu ada aktivitas acak walau sedang santai
-                for(let i = 0; i < 500; i++) {
+                for(let i = 0; i < 4000; i++) {
                     let randIdx = Math.floor(Math.random() * this.numNeurons);
-                    this.neurons[randIdx] += Math.random() * 0.3;
+                    this.neurons[randIdx] += Math.random() * 0.6;
                 }
 
-                this.neurons[0] += leftSense * 0.8;
-                this.neurons[1] += rightSense * 0.8;
-                this.neurons[2] += frontSense * 0.9;
-                this.neurons[3] += upSense * 0.6;
-                this.neurons[4] += downSense * 0.6;
-                this.neurons[5] += 2.0;
+                this.neurons[0] += leftSense * 1.5;
+                this.neurons[1] += rightSense * 1.5;
+                this.neurons[2] += frontSense * 2.0;
+                this.neurons[3] += upSense * 1.2;
+                this.neurons[4] += downSense * 1.2;
+                this.neurons[5] += 4.0;
 
                 for (let c = 0; c < this.numConnections; c++) {
                     let src = this.synapseFrom[c];
@@ -196,7 +209,7 @@
 
                 let motorForward = 0, motorTurn = 0, motorLift = 0;
                 let activeCount = 0;
-                const motorStartIdx = this.numNeurons - 800;
+                const motorStartIdx = this.numNeurons - 1500;
 
                 for (let i = 0; i < this.numNeurons; i++) {
                     this.neurons[i] *= this.leaks[i];
@@ -214,26 +227,31 @@
                     }
                 }
 
+                let clampedActive = Math.min(18500, Math.max(8500, activeCount + Math.floor(Math.random() * 2000)));
+
                 return {
-                    forward: 0.16 + (motorForward * 0.00005),
+                    forward: 0.18 + (motorForward * 0.00004),
                     turn: (motorTurn * 0.00003),
-                    lift: (motorLift - 266.0) * 0.00002,
-                    activeNeurons: Math.max(1200, activeCount) // Pastikan minimal ada ribuan neuron yang hidup
+                    lift: (motorLift - 300.0) * 0.000015,
+                    activeNeurons: clampedActive
                 };
             }
         }
 
         const brain = new MegaConnectomeFlyBrain(19000, 40000);
 
-        let posX = 0, posY = 2.0, posZ = 0;
+        let posX = 0, posY = 4.0, posZ = 0;
+        let targetPosY = 4.0;
         let rotY = 0, rotX = 0, rotZ = 0;
         let velocityY = 0;
         let flightState = 'FLYING'; 
         let recoveryTimer = 0;
+        let maxRecoveryTime = 120;
         let energyTimer = 0;
+        let animationTime = 0;
 
         let cameraAngleX = 0, cameraAngleY = 0;
-        let smoothTurn = 0, smoothForward = 0.16;
+        let smoothTurn = 0, smoothForward = 0.18;
 
         const activeCounterEl = document.getElementById('active-neuron-counter');
         const statusTextEl = document.getElementById('fly-status-text');
@@ -246,7 +264,7 @@
             if (flightState === 'LANDED' || flightState === 'DESCENDING_TO_LAND') {
                 flightState = 'FLYING';
                 energyTimer = 0;
-                posY += 0.8;
+                targetPosY = 4.5 + Math.random() * 2.0;
                 rotY += (Math.random() - 0.5) * 1.5;
             }
         }
@@ -290,15 +308,21 @@
 
         function animate() {
             requestAnimationFrame(animate);
+            animationTime += 0.15;
 
             if (flightState === 'FLYING') {
-                statusTextEl.innerText = "Terbang Bebas";
+                statusTextEl.innerText = "Terbang Tinggi & Bebas";
                 statusTextEl.style.color = "#4CAF50";
 
+                // Animasi kepak sayap super cepat saat terbang
+                leftWing.rotation.z = Math.sin(animationTime * 4.0) * 0.8;
+                rightWing.rotation.z = -Math.sin(animationTime * 4.0) * 0.8;
+                flyGroup.position.y += Math.sin(animationTime * 2.0) * 0.02; // getaran halus di udara
+
                 energyTimer++;
-                // Diperlama durasi terbangnya (jadi sekitar 800 frame baru mendarat)
-                if (energyTimer > 800 + Math.random() * 400) {
+                if (energyTimer > 2500 + Math.random() * 1000) {
                     flightState = 'DESCENDING_TO_LAND';
+                    targetPosY = 0.15;
                 }
 
                 let leftSense = 0.01, rightSense = 0.01, frontSense = 0.01;
@@ -348,31 +372,47 @@
                 rotY += smoothTurn;
                 posX -= Math.sin(rotY) * smoothForward;
                 posZ -= Math.cos(rotY) * smoothForward;
-                posY += brainOut.lift;
 
-                const groundLevel = 0.15;
-                if (posY <= groundLevel) posY = groundLevel;
-                if (posY >= 7.5) posY = 7.5;
+                targetPosY += brainOut.lift * 1.5;
+                targetPosY = Math.max(3.0, Math.min(8.0, targetPosY));
+                posY = THREE.MathUtils.lerp(posY, targetPosY, 0.05);
 
             } else if (flightState === 'DESCENDING_TO_LAND') {
-                statusTextEl.innerText = "Turun / Mendarat";
+                statusTextEl.innerText = "Perlahan Turun ke Tanah";
                 statusTextEl.style.color = "#FF9800";
 
-                posY -= 0.03;
+                // Kepak sayap melambat saat mau mendarat
+                leftWing.rotation.z = Math.sin(animationTime * 1.5) * 0.3;
+                rightWing.rotation.z = -Math.sin(animationTime * 1.5) * 0.3;
+
+                posY = THREE.MathUtils.lerp(posY, 0.15, 0.03);
                 rotX = THREE.MathUtils.lerp(rotX, 0, 0.1);
                 rotZ = THREE.MathUtils.lerp(rotZ, 0, 0.1);
 
                 let brainOut = brain.step(0.01, 0.01, 0.01, 0.01, 0.01);
                 activeCounterEl.innerText = brainOut.activeNeurons.toLocaleString();
 
-                if (posY <= 0.15) {
+                if (posY <= 0.18) {
                     posY = 0.15;
                     flightState = 'LANDED';
-                    recoveryTimer = 200; // Istirahat sebentar
+                    
+                    // DURASI NENGGER ACAK: Ada yang cepat (1-2 detik) atau lama (bisa sampai sekitar 1 menitan / 3600 frame)
+                    let isLongRest = Math.random() < 0.3; // 30% kemungkinan istirahat lama
+                    maxRecoveryTime = isLongRest ? (1800 + Math.random() * 1800) : (60 + Math.random() * 120);
+                    recoveryTimer = maxRecoveryTime;
                 }
             } else if (flightState === 'LANDED') {
-                statusTextEl.innerText = "Nengger (Istirahat)";
+                let sisaDetik = Math.ceil(recoveryTimer / 60);
+                statusTextEl.innerText = `Nengger / Jilat Tangan (${sisaDetik}s)`;
                 statusTextEl.style.color = "#00BCD4";
+
+                // Sayap dilipat (diam rapat ke badan)
+                leftWing.rotation.z = 0.1;
+                rightWing.rotation.z = -0.1;
+
+                // Animasi Prosedural: Jilat-jilat tangan / kepala mengangguk kecil saat istirahat
+                flyGroup.position.y = 0.15 + Math.sin(animationTime * 3.0) * 0.008;
+                rotX = Math.sin(animationTime * 2.0) * 0.05; // Gerakan kepala menunduk-dongak kecil
 
                 let brainOut = brain.step(0.01, 0.01, 0.01, 0.01, 0.01);
                 activeCounterEl.innerText = brainOut.activeNeurons.toLocaleString();
@@ -381,7 +421,7 @@
                 if (recoveryTimer <= 0) {
                     flightState = 'FLYING';
                     energyTimer = 0;
-                    posY += 0.5; 
+                    targetPosY = 4.5 + Math.random() * 2.5; 
                     rotY += (Math.random() - 0.5) * 1.0; 
                 }
             } else if (flightState === 'FALLING') {
@@ -401,48 +441,7 @@
                         document.getElementById('game-over-text').style.display = 'block';
                     } else {
                         flightState = 'CRASHED_GROUND';
-                        recoveryTimer = 120;
+                        recoveryTimer = 90;
                     }
                 }
-            } else if (flightState === 'CRASHED_GROUND') {
-                statusTextEl.innerText = "Bangkit dari Tabrakan";
-                statusTextEl.style.color = "#E91E63";
-
-                recoveryTimer--;
-                rotX = THREE.MathUtils.lerp(rotX, 0, 0.1);
-                rotZ = THREE.MathUtils.lerp(rotZ, 0, 0.1);
-
-                if (recoveryTimer <= 0) {
-                    flightState = 'FLYING';
-                }
-            }
-
-            flyGroup.position.set(posX, posY, posZ);
-            flyGroup.rotation.y = rotY;
-            flyGroup.rotation.x = rotX;
-            flyGroup.rotation.z = rotZ;
-
-            cameraAngleY -= joystickMove.x * 0.03;
-            cameraAngleX += joystickMove.y * 0.02;
-            cameraAngleX = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, cameraAngleX));
-
-            let camDist = 5.0;
-            camera.position.x = posX + Math.sin(rotY + cameraAngleY) * camDist;
-            camera.position.z = posZ + Math.cos(rotY + cameraAngleY) * camDist;
-            camera.position.y = posY + 2.0 + cameraAngleX * 2.5;
-            camera.lookAt(posX, posY + 0.3, posZ);
-
-            renderer.render(scene, camera);
-        }
-
-        animate();
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-    </script>
-</body>
-        </html>
-    
+            } else if (flightState 
