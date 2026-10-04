@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>The Amazing Digital Fly - Anti-Jebak Pohon</title>
+    <title>The Amazing Garden Fly - Ultra Safe Mode</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -43,7 +43,7 @@
 <body>
 
     <div id="info">
-        <h3>🪰 The Amazing Digital Fly</h3>
+        <h3>🪰 The Amazing Garden Fly</h3>
         <p>Total SNN: <span class="neuron-glow">19.000</span> Neuron</p>
         <p>Koneksi Sinapsis: <span class="neuron-glow">40.000</span></p>
         <p>Neuron Menyala: <span id="active-neuron-counter" class="neuron-glow">14.250</span> / 19K</p>
@@ -105,7 +105,8 @@
             );
             let x = (Math.random() - 0.5) * 80;
             let z = (Math.random() - 0.5) * 80;
-            if (Math.abs(x) > 10 || Math.abs(z) > 10) {
+            // Jauhkan pohon dari titik tengah awal spawn
+            if (Math.abs(x) > 12 || Math.abs(z) > 12) {
                 tree.position.set(x, 3.5, z);
                 scene.add(tree);
                 trees.push(tree);
@@ -135,13 +136,13 @@
             }
             step(eyeLeft, eyeFront, eyeRight) {
                 this.energy++;
-                let turn = (eyeRight - eyeLeft) * 0.1;
-                if (eyeFront > 0.3) {
-                    turn += (Math.random() > 0.5 ? 0.4 : -0.4);
+                let turn = (eyeRight - eyeLeft) * 0.12;
+                if (eyeFront > 0.2) {
+                    turn += (Math.random() > 0.5 ? 0.5 : -0.5);
                 } else {
                     turn += (Math.random() - 0.5) * 0.05;
                 }
-                let forward = 0.2 + Math.random() * 0.03;
+                let forward = 0.18 + Math.random() * 0.02;
                 let lift = (Math.random() - 0.48) * 0.015;
                 let activeNeurons = Math.floor(13500 + Math.sin(this.energy * 0.1) * 2500 + Math.random() * 800);
                 return { forward, turn, lift, activeNeurons };
@@ -157,7 +158,7 @@
         let instinctTimer = 0;
 
         let cameraAngleX = 0, cameraAngleY = 0;
-        let smoothTurn = 0, smoothForward = 0.2;
+        let smoothTurn = 0, smoothForward = 0.18;
 
         const activeCounterEl = document.getElementById('active-neuron-counter');
         const statusTextEl = document.getElementById('fly-status-text');
@@ -216,7 +217,7 @@
             requestAnimationFrame(animate);
 
             if (flightState === 'FLYING') {
-                statusTextEl.innerText = "Terbang Bebas & Menghindar";
+                statusTextEl.innerText = "Terbang Aman & Menghindar";
                 statusTextEl.style.color = "#4CAF50";
 
                 instinctTimer++;
@@ -225,36 +226,36 @@
                 let flyPos = new THREE.Vector3(posX, posY, posZ);
                 let flyDir = new THREE.Vector3(-Math.sin(rotY), 0, -Math.cos(rotY));
 
-                let isHit = false;
+                let isNearTree = false;
                 trees.forEach(tree => {
                     let treeCenter = new THREE.Vector3(tree.position.x, posY, tree.position.z);
                     let dist = flyPos.distanceTo(treeCenter);
                     
-                    // Batas jarak aman agar tidak menembus/masuk ke dalam pohon
-                    if (dist < 2.3) { 
-                        isHit = true; 
-                        // Dorong paksa lalat menjauh dari pusat pohon agar tidak kejebak
+                    // Radius proteksi diperbesar agar lalat langsung mental jauh sebelum menyentuh pohon
+                    if (dist < 3.2) { 
+                        isNearTree = true; 
                         let pushAway = new THREE.Vector3().subVectors(flyPos, treeCenter).normalize();
-                        posX += pushAway.x * 0.4;
-                        posZ += pushAway.z * 0.4;
-                        rotY += 1.2; // Belok tajam seketika
+                        posX += pushAway.x * 0.8; // Dorongan mundur lebih kuat
+                        posZ += pushAway.z * 0.8;
+                        rotY += 2.5; // Putar arah balik secara instan
                     }
                     
-                    if (dist < 8) {
+                    if (dist < 10) {
                         let dirToTree = new THREE.Vector3().subVectors(tree.position, flyPos).normalize();
                         let cross = flyDir.clone().cross(dirToTree).y;
                         let dot = flyDir.clone().dot(dirToTree);
-                        if (dot > 0.1) eyeFront += (8 - dist) * 0.5;
-                        if (cross > 0) eyeRight += (8 - dist) * 0.5;
-                        else eyeLeft += (8 - dist) * 0.5;
+                        if (dot > 0.05) eyeFront += (10 - dist) * 0.6;
+                        if (cross > 0) eyeRight += (10 - dist) * 0.6;
+                        else eyeLeft += (10 - dist) * 0.6;
                     }
                 });
 
-                if (isHit) {
+                // Jika terlampau dekat, langsung trigger jatuh atau belok tajam
+                if (isNearTree) {
                     flightState = 'FALLING';
-                    velocityY = 0.04;
-                    rotX = (Math.random() - 0.5) * 0.4;
-                    rotZ = (Math.random() - 0.5) * 0.4;
+                    velocityY = 0.03;
+                    rotX = (Math.random() - 0.5) * 0.6;
+                    rotZ = (Math.random() - 0.5) * 0.6;
                 }
 
                 const limit = 46;
@@ -270,11 +271,11 @@
                 let brainOut = brain.step(eyeLeft, eyeFront, eyeRight);
                 activeCounterEl.innerText = brainOut.activeNeurons.toLocaleString();
 
-                let targetTurn = brainOut.turn + (eyeRight - eyeLeft) * 0.2;
-                if (eyeFront > 0.3) targetTurn += 0.35;
+                let targetTurn = brainOut.turn + (eyeRight - eyeLeft) * 0.25;
+                if (eyeFront > 0.2) targetTurn += 0.5;
 
-                smoothTurn = THREE.MathUtils.lerp(smoothTurn, targetTurn, 0.12);
-                smoothForward = THREE.MathUtils.lerp(smoothForward, brainOut.forward, 0.12);
+                smoothTurn = THREE.MathUtils.lerp(smoothTurn, targetTurn, 0.15);
+                smoothForward = THREE.MathUtils.lerp(smoothForward, brainOut.forward, 0.15);
 
                 rotY += smoothTurn;
                 posX -= Math.sin(rotY) * smoothForward;
@@ -309,28 +310,28 @@
                     rotY += (Math.random() - 0.5) * 1.2; 
                 }
             } else if (flightState === 'FALLING') {
-                statusTextEl.innerText = "Jatuh / Menabrak!";
+                statusTextEl.innerText = "Menghindar Pohon!";
                 statusTextEl.style.color = "#f44336";
 
-                velocityY += 0.015;
+                velocityY += 0.02;
                 posY -= velocityY;
-                rotX += 0.03;
+                rotX += 0.04;
 
                 if (posY <= 0.15) {
                     posY = 0.15;
                     flightState = 'CRASHED_GROUND';
-                    window.recoveryTimer = 40; 
+                    window.recoveryTimer = 25; // Bangkit kilat agar langsung kabur
                 }
             } else if (flightState === 'CRASHED_GROUND') {
-                statusTextEl.innerText = "Bangkit & Menghindar";
+                statusTextEl.innerText = "Bangkit & Ngibrit!";
                 statusTextEl.style.color = "#E91E63";
 
                 window.recoveryTimer--;
-                rotX = THREE.MathUtils.lerp(rotX, 0, 0.2);
-                rotZ = THREE.MathUtils.lerp(rotZ, 0, 0.2);
+                rotX = THREE.MathUtils.lerp(rotX, 0, 0.3);
+                rotZ = THREE.MathUtils.lerp(rotZ, 0, 0.3);
                 
-                rotY += 0.15; 
-                posY += 0.03;
+                rotY += 0.3; // Langsung belok patah menjauh
+                posY += 0.05;
 
                 if (window.recoveryTimer <= 0) {
                     flightState = 'FLYING';
@@ -365,5 +366,4 @@
         });
     </script>
 </body>
-    </html>
-    
+</html>
