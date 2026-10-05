@@ -111,8 +111,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-    
-    <script>
+        <script>
         // --- 1. SETUP DUNIA 3D UTAMA ---
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87CEEB);
@@ -261,7 +260,7 @@
         let camAngleOffsetH = 0, camAngleOffsetV = 0, camDist = 4.5;
         let joystickMove = { x: 0, y: 0 };
 
-        // Variabel Nengger / Landing Perlahan
+        // Variabel Nengger & Transisi Ketinggian Perlahan
         let perchingTimer = 0;
         let isPerching = false;
         let perchState = 'flying'; // 'flying', 'landing', 'perched', 'takeoff'
@@ -295,7 +294,7 @@
             let flyDir = new THREE.Vector3(-Math.sin(rotY), 0, -Math.cos(rotY));
             let eyeLeft = 0, eyeFront = 0, eyeRight = 0, lookRange = 4.0;
 
-            // Logika Capek & Keputusan Nengger (Durasi acak antara 4 sampai 12 detik = 240 s.d. 720 frame)
+            // Logika Capek & Keputusan Nengger (Durasi acak 4 - 12 detik = 240 s.d. 720 frame)
             if (perchState === 'flying' && brain.energy <= 5) {
                 let nearObj = obstacles.find(obs => flyPos.distanceTo(obs.position) < 4.0);
                 if (nearObj) {
@@ -306,7 +305,7 @@
 
             // Transisi Ketinggian Perlahan (Turun ke tanah & Naik perlahan saat terbang)
             if (perchState === 'landing') {
-                posY = THREE.MathUtils.lerp(posY, 0.2, 0.05); // Perlahan turun ke tanah
+                posY = THREE.MathUtils.lerp(posY, 0.2, 0.05); 
                 if (posY <= 0.25) {
                     posY = 0.2;
                     perchState = 'perched';
@@ -314,13 +313,12 @@
                 }
             } else if (perchState === 'perched') {
                 perchingTimer--;
-                // Bangun kalau waktu habis, energi sudah penuh, atau pemain menggerakkan joystick
                 if (perchingTimer <= 0 || brain.energy >= 95 || Math.abs(joystickMove.x) > 0.1 || Math.abs(joystickMove.y) > 0.1) {
                     perchState = 'takeoff';
                     isPerching = false;
                 }
             } else if (perchState === 'takeoff') {
-                posY = THREE.MathUtils.lerp(posY, 1.4, 0.04); // Perlahan naik ke atas udara
+                posY = THREE.MathUtils.lerp(posY, 1.4, 0.04); 
                 if (posY >= 1.35) {
                     posY = 1.4;
                     perchState = 'flying';
@@ -347,7 +345,7 @@
 
             let brainOut = brain.step(eyeLeft, eyeFront, eyeRight, isPerching);
 
-            // Update Teks HUD (Termasuk Neuron Menyala & Energy)
+            // Update Teks HUD
             document.getElementById('hud-action-title').innerText = brainOut.title;
             document.getElementById('hud-action-desc').innerText = brainOut.desc + ` (Energy: ${Math.round(brain.energy)}%)`;
             document.getElementById('hud-dopamine').innerText = brainOut.dop;
@@ -376,4 +374,46 @@
             // Pergerakan Lalat
             if (perchState === 'flying') {
                 smoothTurn = THREE.MathUtils.lerp(smoothTurn, brainOut.turn, 0.08);
-                rotY += smoothTurn
+                rotY += smoothTurn;
+
+                posX -= Math.sin(rotY) * brainOut.forward;
+                posZ -= Math.cos(rotY) * brainOut.forward;
+
+                posX = Math.max(-39.5, Math.min(39.5, posX));
+                posZ = Math.max(-39.5, Math.min(39.5, posZ));
+                
+                posY += brainOut.lift;
+                if (posY < 1.0) posY = 1.0;
+                if (posY > 2.8) posY = 2.8;
+            }
+
+            flyGroup.position.set(posX, posY, posZ);
+            flyGroup.rotation.y = rotY;
+
+            // Kamera & Joystick
+            camAngleOffsetH += joystickMove.x * 0.03;
+            camAngleOffsetV = THREE.MathUtils.lerp(camAngleOffsetV, -joystickMove.y * 2.0, 0.1);
+
+            let totalCamAngle = rotY + Math.PI + camAngleOffsetH;
+            camera.position.set(
+                posX + Math.sin(totalCamAngle) * camDist,
+                posY + 1.0 + camAngleOffsetV,
+                posZ + Math.cos(totalCamAngle) * camDist
+            );
+            camera.lookAt(posX, posY + 0.2, posZ);
+
+            renderer.render(scene, camera);
+            miniRenderer.render(miniScene, miniCamera);
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+    </html>
+    
