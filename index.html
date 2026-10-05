@@ -18,6 +18,7 @@
         .neuron-glow { color: #ffeb3b; font-weight: bold; }
         .synapse-glow { color: #ff4081; font-weight: bold; }
 
+        /* HUD PANEL OTAK LIVE */
         #cns-hud {
             position: absolute; top: 15px; right: 15px; width: 280px;
             background: rgba(10, 15, 25, 0.9); border: 1px solid rgba(0, 229, 255, 0.5);
@@ -72,14 +73,16 @@
 <body>
 
     <div id="info">
-        <h3>🪰 Digital Fly SNN</h3>
-        <p>Neuron: <span class="neuron-glow">19.000</span></p>
-        <p>Sinapsis: <span class="synapse-glow">40.000</span></p>
+        <h3>🪰 The Amazing Digital Fly</h3>
+        <p>Total SNN: <span class="neuron-glow">19.000 Neuron</span></p>
+        <p>Koneksi Sinapsis: <span class="synapse-glow">40.000</span></p>
+        <p>Neuron Menyala: <span id="active-neurons-text" class="neuron-glow">15.120 / 19K</span></p>
     </div>
 
+    <!-- HUD PANEL OTAK LIVE -->
     <div id="cns-hud">
         <div class="cns-header">
-            <span>FLY BRAIN - CENTRAL NERVOUS SYSTEM LIVE</span>
+            <span>FLY BRAIN - CENTRAL NERVOUS SYSTEM</span>
             <span style="color: #00ffcc;">● LIVE</span>
         </div>
         
@@ -110,6 +113,7 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     
     <script>
+        // --- 1. SETUP DUNIA 3D UTAMA ---
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87CEEB);
         scene.fog = new THREE.FogExp2(0x87CEEB, 0.012);
@@ -124,6 +128,7 @@
         sunLight.position.set(30, 50, 20);
         scene.add(sunLight);
 
+        // --- 2. MINI 3D NEURON DI HUD ---
         const miniContainer = document.getElementById('mini-brain-container');
         const miniCanvas = document.getElementById('mini-brain-canvas');
         const miniRenderer = new THREE.WebGLRenderer({ canvas: miniCanvas, antialias: true, alpha: true });
@@ -166,6 +171,7 @@
         const miniSynapseLines = new THREE.LineSegments(miniSynapseGeo, miniSynapseMat);
         miniBrainGroup.add(miniSynapseLines);
 
+        // --- TANAH, BUNGA (15 BIJI), & POHON ---
         const ground = new THREE.Mesh(
             new THREE.PlaneGeometry(120, 120),
             new THREE.MeshStandardMaterial({ color: 0x3b7a57, roughness: 0.9 })
@@ -210,6 +216,7 @@
             if (Math.abs(x) > 8 || Math.abs(z) > 8) { treeGroup.position.set(x, 0, z); scene.add(treeGroup); obstacles.push(treeGroup); }
         }
 
+        // --- MODEL LALAT ---
         const flyGroup = new THREE.Group();
         scene.add(flyGroup);
         const fallbackFly = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), new THREE.MeshStandardMaterial({ color: 0x111 }));
@@ -223,6 +230,7 @@
             flyGroup.add(model);
         });
 
+        // --- SNN FLY BRAIN DENGAN FITUR CAPEK & NEURON MENYALA ---
         class SNNFlyBrain {
             constructor() { 
                 this.time = 0; 
@@ -233,17 +241,17 @@
                 
                 if (isPerching) {
                     this.energy = Math.min(100, this.energy + 0.35); 
-                    return { forward: 0, turn: 0, lift: 0, title: "PERCHING (RESTING)", desc: "neural fatigue recovered, resting on surface", dop: "15%", firing: "0.2 kHz", spike: "Resting", synStat: "Paused" };
+                    return { forward: 0, turn: 0, lift: 0, title: "PERCHING (RESTING)", desc: "neural fatigue recovered, resting on surface", dop: "15%", firing: "0.2 kHz", spike: "Resting", synStat: "Paused", activeNeurons: 3200 };
                 } else {
                     this.energy = Math.max(0, this.energy - 0.04); 
                 }
 
                 if (eyeFront > 0.3) {
-                    return { forward: 0.10, turn: (eyeRight > eyeLeft ? -0.05 : 0.05), lift: 0.003, title: "EMERGENCY AVOIDANCE", desc: "optic lobes trigger sharp turn", dop: "72%", firing: "3.8 kHz", spike: "Burst!", synStat: "Active Burst" };
+                    return { forward: 0.10, turn: (eyeRight > eyeLeft ? -0.05 : 0.05), lift: 0.003, title: "EMERGENCY AVOIDANCE", desc: "optic lobes trigger sharp turn", dop: "72%", firing: "3.8 kHz", spike: "Burst!", synStat: "Active Burst", activeNeurons: 17450 };
                 } else if (eyeFront > 0.12 || eyeLeft > 0.25 || eyeRight > 0.25) {
-                    return { forward: 0.10, turn: (eyeRight - eyeLeft) * 0.06, lift: 0.002, title: "OBSTACLE STEERING", desc: "mushroom bodies adjust vector", dop: "58%", firing: "2.2 kHz", spike: "Steering", synStat: "40k Syn" };
+                    return { forward: 0.10, turn: (eyeRight - eyeLeft) * 0.06, lift: 0.002, title: "OBSTACLE STEERING", desc: "mushroom bodies adjust vector", dop: "58%", firing: "2.2 kHz", spike: "Steering", synStat: "40k Syn", activeNeurons: 14200 };
                 } else {
-                    return { forward: 0.10, turn: Math.sin(this.time * 0.04) * 0.015, lift: Math.sin(this.time * 0.06) * 0.004, title: "AUTONOMOUS FLIGHT", desc: "descending neurons drive course", dop: "54%", firing: "1.4 kHz", spike: "Active", synStat: "40k Syn" };
+                    return { forward: 0.10, turn: Math.sin(this.time * 0.04) * 0.015, lift: Math.sin(this.time * 0.06) * 0.004, title: "AUTONOMOUS FLIGHT", desc: "descending neurons drive course", dop: "54%", firing: "1.4 kHz", spike: "Active", synStat: "40k Syn", activeNeurons: 11800 };
                 }
             }
         }
@@ -252,8 +260,11 @@
         let posX = 0, posY = 1.4, posZ = 0, rotY = 0, smoothTurn = 0;
         let camAngleOffsetH = 0, camAngleOffsetV = 0, camDist = 4.5;
         let joystickMove = { x: 0, y: 0 };
+
+        // Variabel Nengger / Landing Perlahan
         let perchingTimer = 0;
         let isPerching = false;
+        let perchState = 'flying'; // 'flying', 'landing', 'perched', 'takeoff'
 
         const base = document.getElementById('joystick-base');
         const stick = document.getElementById('joystick-stick');
@@ -276,6 +287,7 @@
         window.addEventListener('mousemove', e => { if (isDown) updateJoystick(e.clientX, e.clientY); });
         window.addEventListener('mouseup', () => { if (isDown) { isDown = false; stick.style.transform = `translate(0px, 0px)`; joystickMove.x = 0; joystickMove.y = 0; } });
 
+        // --- ANIMASI LOOP UTAMA ---
         function animate() {
             requestAnimationFrame(animate);
 
@@ -283,20 +295,35 @@
             let flyDir = new THREE.Vector3(-Math.sin(rotY), 0, -Math.cos(rotY));
             let eyeLeft = 0, eyeFront = 0, eyeRight = 0, lookRange = 4.0;
 
-            if (!isPerching && brain.energy <= 5) {
+            // Logika Capek & Keputusan Nengger (Durasi acak antara 4 sampai 12 detik = 240 s.d. 720 frame)
+            if (perchState === 'flying' && brain.energy <= 5) {
                 let nearObj = obstacles.find(obs => flyPos.distanceTo(obs.position) < 4.0);
                 if (nearObj) {
-                    isPerching = true;
+                    perchState = 'landing';
                     perchingTimer = Math.floor(Math.random() * 480) + 240; 
-                    posY = 1.0; 
                 }
             }
 
-            if (isPerching) {
+            // Transisi Ketinggian Perlahan (Turun ke tanah & Naik perlahan saat terbang)
+            if (perchState === 'landing') {
+                posY = THREE.MathUtils.lerp(posY, 0.2, 0.05); // Perlahan turun ke tanah
+                if (posY <= 0.25) {
+                    posY = 0.2;
+                    perchState = 'perched';
+                    isPerching = true;
+                }
+            } else if (perchState === 'perched') {
                 perchingTimer--;
+                // Bangun kalau waktu habis, energi sudah penuh, atau pemain menggerakkan joystick
                 if (perchingTimer <= 0 || brain.energy >= 95 || Math.abs(joystickMove.x) > 0.1 || Math.abs(joystickMove.y) > 0.1) {
+                    perchState = 'takeoff';
                     isPerching = false;
+                }
+            } else if (perchState === 'takeoff') {
+                posY = THREE.MathUtils.lerp(posY, 1.4, 0.04); // Perlahan naik ke atas udara
+                if (posY >= 1.35) {
                     posY = 1.4;
+                    perchState = 'flying';
                 }
             }
 
@@ -320,13 +347,16 @@
 
             let brainOut = brain.step(eyeLeft, eyeFront, eyeRight, isPerching);
 
+            // Update Teks HUD (Termasuk Neuron Menyala & Energy)
             document.getElementById('hud-action-title').innerText = brainOut.title;
             document.getElementById('hud-action-desc').innerText = brainOut.desc + ` (Energy: ${Math.round(brain.energy)}%)`;
             document.getElementById('hud-dopamine').innerText = brainOut.dop;
             document.getElementById('hud-firing').innerText = brainOut.firing;
             document.getElementById('hud-spike').innerText = brainOut.spike;
             document.getElementById('hud-syn-stat').innerText = brainOut.synStat;
+            document.getElementById('active-neurons-text').innerText = brainOut.activeNeurons.toLocaleString('id-ID') + " / 19K";
 
+            // Animasi Warna Neuron 3D Mini
             miniBrainGroup.rotation.y += 0.015;
             let colAttr = miniNeuronGeo.attributes.color;
             for(let i = 0; i < colAttr.count; i++) {
@@ -343,47 +373,7 @@
             }
             colAttr.needsUpdate = true;
 
-            if (!isPerching) {
+            // Pergerakan Lalat
+            if (perchState === 'flying') {
                 smoothTurn = THREE.MathUtils.lerp(smoothTurn, brainOut.turn, 0.08);
-                rotY += smoothTurn;
-
-                posX -= Math.sin(rotY) * brainOut.forward;
-                posZ -= Math.cos(rotY) * brainOut.forward;
-
-                posX = Math.max(-39.5, Math.min(39.5, posX));
-                posZ = Math.max(-39.5, Math.min(39.5, posZ));
-                
-                posY += brainOut.lift;
-                if (posY < 1.0) posY = 1.0;
-                if (posY > 2.8) posY = 2.8;
-            }
-
-            flyGroup.position.set(posX, posY, posZ);
-            flyGroup.rotation.y = rotY;
-
-            camAngleOffsetH += joystickMove.x * 0.03;
-            camAngleOffsetV = THREE.MathUtils.lerp(camAngleOffsetV, -joystickMove.y * 2.0, 0.1);
-
-            let totalCamAngle = rotY + Math.PI + camAngleOffsetH;
-            camera.position.set(
-                posX + Math.sin(totalCamAngle) * camDist,
-                posY + 1.0 + camAngleOffsetV,
-                posZ + Math.cos(totalCamAngle) * camDist
-            );
-            camera.lookAt(posX, posY + 0.2, posZ);
-
-            renderer.render(scene, camera);
-            miniRenderer.render(miniScene, miniCamera);
-        }
-
-        animate();
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-    </script>
-</body>
-    </html>
-    
+                rotY += smoothTurn
