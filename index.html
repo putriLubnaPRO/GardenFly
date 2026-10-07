@@ -70,16 +70,7 @@
     <!-- KOTAK IKLAN (Bisa ditaruh script AdSense / Adsterra / Banner di dalam div ini) -->
     <div id="ad-box-container">
         <span>-- SPACE IKLAN --</span>
-        <script>
-  atOptions = {
-    'key' : '1906564690a0b056148af87aadb9bbd4',
-    'format' : 'iframe',
-    'height' : 90,
-    'width' : 728,
-    'params' : {}
-  };
-</script>
-<script src="https://www.highrevenueformat.com/1906564690a0b056148af87aadb9bbd4/invoke.js"></script>
+        <!-- Paste Kode Script Iklan / Banner Adsterra / AdSense Kamu Di Sini -->
     </div>
 
     <div id="mini-brain-container"></div>
@@ -179,7 +170,7 @@
             if (!flowerGroup) flowerGroup = flower;
         }
 
-        // Load lalat.glb
+        // Load lalat.glb dengan penanganan aman
         const flyGroup = new THREE.Group();
         scene.add(flyGroup);
 
@@ -188,16 +179,22 @@
         let flyMesh = new THREE.Mesh(fallbackGeo, new THREE.MeshBasicMaterial({ color: 0x00ffcc, wireframe: true }));
         flyGroup.add(flyMesh);
 
-        const loader = new THREE.GLTFLoader();
-        loader.load('lalat.glb', (gltf) => {
-            flyGroup.remove(flyMesh);
-            const model = gltf.scene;
-            model.scale.set(0.3, 0.3, 0.3);
-            model.rotation.y = Math.PI; 
-            flyGroup.add(model);
-        }, undefined, (err) => {
-            console.log("File lalat.glb tidak ditemukan, memakai model default.");
-        });
+        try {
+            if (typeof THREE.GLTFLoader !== 'undefined') {
+                const loader = new THREE.GLTFLoader();
+                loader.load('lalat.glb', (gltf) => {
+                    flyGroup.remove(flyMesh);
+                    const model = gltf.scene;
+                    model.scale.set(0.3, 0.3, 0.3);
+                    model.rotation.y = Math.PI; 
+                    flyGroup.add(model);
+                }, undefined, (err) => {
+                    console.log("File lalat.glb tidak ditemukan, memakai model default.");
+                });
+            }
+        } catch (e) {
+            console.log("Loader error:", e);
+        }
 
         // Mini Brain Visualizer
         const miniContainer = document.getElementById('mini-brain-container');
@@ -258,157 +255,6 @@
 
                 if (eyeFront > 0.3) {
                     let cpgVal = this.stepCPG(1.5); 
-                    return { forward: 0.08, turn: (eyeRight >= eyeLeft ? -0.09 : 0.09), lift: cpgVal, title: "EMERGENCY AVOIDANCE", desc: "dng100 & cpg circuit trigger escape", dop: "72%", firing: "3.8 kHz", spike: "Burst!", synStat: "40k Syn", activeNeurons: 17450, cpgState: "Active (Escape)" };
-                } else if (eyeFront > 0.12 || eyeLeft > 0.25 || eyeRight > 0.25) {
-                    let cpgVal = this.stepCPG(0.8);
-                    return { forward: 0.10, turn: (eyeRight - eyeLeft) * 0.07, lift: cpgVal, title: "OBSTACLE STEERING", desc: "cpg modulation adjusts vector", dop: "58%", firing: "2.2 kHz", spike: "Steering", synStat: "40k Syn", activeNeurons: 14200, cpgState: "Active (Steer)" };
-                } else {
-                    let cpgVal = this.stepCPG(0.5); 
-                    return { forward: 0.10, turn: Math.sin(this.time * 0.04) * 0.015, lift: cpgVal, title: "AUTONOMOUS FLIGHT", desc: "cpg 3-neuron rhythmic active", dop: "54%", firing: "1.4 kHz", spike: "Active", synStat: "40k Syn", activeNeurons: 11800, cpgState: "Active (Stable)" };
-                }
-            }
-        }
-
-        const brain = new SNNFlyBrain();
-        let posX = 0, posY = 1.4, posZ = 0, rotY = 0, smoothTurn = 0;
-        let camAngleOffsetH = 0, camAngleOffsetV = 0, camDist = 4.5;
-        let joystickMove = { x: 0, y: 0 };
-        let perchingTimer = 0, isPerching = false, perchState = 'flying'; 
-
-        const base = document.getElementById('joystick-base');
-        const stick = document.getElementById('joystick-stick');
-
-        function updateJoystick(cx, cy) {
-            const rect = base.getBoundingClientRect();
-            let x = cx - (rect.left + rect.width / 2);
-            let y = cy - (rect.top + rect.height / 2);
-            let dist = Math.sqrt(x*x + y*y), max = 40;
-            if (dist > max) { x = (x/dist)*max; y = (y/dist)*max; }
-            stick.style.transform = `translate(${x}px, ${y}px)`;
-            joystickMove.x = x / max; joystickMove.y = y / max; 
-        }
-
-        base.addEventListener('touchmove', e => updateJoystick(e.touches[0].clientX, e.touches[0].clientY));
-        base.addEventListener('touchend', () => { stick.style.transform = `translate(0px, 0px)`; joystickMove.x = 0; joystickMove.y = 0; });
-        let isDown = false;
-        base.addEventListener('mousedown', () => isDown = true);
-        window.addEventListener('mousemove', e => { if (isDown) updateJoystick(e.clientX, e.clientY); });
-        window.addEventListener('mouseup', () => { if (isDown) { isDown = false; stick.style.transform = `translate(0px, 0px)`; joystickMove.x = 0; joystickMove.y = 0; } });
-
-        function animate() {
-            requestAnimationFrame(animate);
-
-            let flyPos = new THREE.Vector3(posX, posY, posZ);
-            let flyDir = new THREE.Vector3(Math.sin(rotY), 0, Math.cos(rotY));
-            let eyeLeft = 0, eyeFront = 0, eyeRight = 0, lookRange = 5.0;
-
-            if (perchState === 'flying' && brain.energy <= 5) {
-                let nearObj = obstacles.find(obs => flyPos.distanceTo(obs.position) < 4.0);
-                if (nearObj) { perchState = 'landing'; perchingTimer = Math.floor(Math.random() * 480) + 240; }
-            }
-
-            if (perchState === 'landing') {
-                posY = THREE.MathUtils.lerp(posY, 0.2, 0.05); 
-                if (posY <= 0.25) { posY = 0.2; perchState = 'perched'; isPerching = true; }
-            } else if (perchState === 'perched') {
-                perchingTimer--;
-                flyGroup.rotation.z = Math.sin(Date.now() * 0.02) * 0.08;
-                if (perchingTimer <= 0 || brain.energy >= 95 || Math.abs(joystickMove.x) > 0.1 || Math.abs(joystickMove.y) > 0.1) {
-                    perchState = 'takeoff'; isPerching = false; flyGroup.rotation.z = 0; 
-                }
-            } else if (perchState === 'takeoff') {
-                posY = THREE.MathUtils.lerp(posY, 1.4, 0.04); 
-                if (posY >= 1.35) { posY = 1.4; perchState = 'flying'; }
-            }
-
-            // Sensor Pohon & Halangan
-            obstacles.forEach(obs => {
-                let obsPos = new THREE.Vector3(obs.position.x, posY, obs.position.z);
-                let d = flyPos.distanceTo(obsPos);
-                if (d < lookRange) {
-                    let dir = new THREE.Vector3().subVectors(obsPos, flyPos).normalize();
-                    let cross = flyDir.clone().cross(dir).y;
-                    let dot = flyDir.clone().dot(dir);
-                    if (dot > 0.1) eyeFront += (lookRange - d) * 0.2;
-                    if (cross > 0) eyeRight += (lookRange - d) * 0.2;
-                    else eyeLeft += (lookRange - d) * 0.2;
-                }
-            });
-
-            // Sensor Tembok Batas Dunia
-            const margin = 6.0;
-            if (posZ < -mapSize + margin) {
-                let dist = Math.abs(posZ - (-mapSize));
-                let weight = (margin - dist) * 0.25;
-                if (Math.abs(flyDir.z) > 0.2 && flyDir.z < 0) eyeFront += weight;
-                if (flyDir.x > 0) eyeLeft += weight; else eyeRight += weight;
-            }
-            if (posZ > mapSize - margin) {
-                let dist = Math.abs(mapSize - posZ);
-                let weight = (margin - dist) * 0.25;
-                if (Math.abs(flyDir.z) > 0.2 && flyDir.z > 0) eyeFront += weight;
-                if (flyDir.x > 0) eyeLeft += weight; else eyeRight += weight;
-            }
-            if (posX < -mapSize + margin) {
-                let dist = Math.abs(posX - (-mapSize));
-                let weight = (margin - dist) * 0.25;
-                if (Math.abs(flyDir.x) > 0.2 && flyDir.x < 0) eyeFront += weight;
-                if (flyDir.z > 0) eyeRight += weight; else eyeLeft += weight;
-            }
-            if (posX > mapSize - margin) {
-                let dist = Math.abs(mapSize - posX);
-                let weight = (margin - dist) * 0.25;
-                if (Math.abs(flyDir.x) > 0.2 && flyDir.x > 0) eyeFront += weight;
-                if (flyDir.z > 0) eyeRight += weight; else eyeLeft += weight;
-            }
-
-            // Sensor Bau Bunga
-            if (perchState === 'flying' && eyeFront < 0.1 && flowerGroup) {
-                let nearestFlower = null, minDist = 15.0;
-                scene.traverse(child => {
-                    if (child.type === "Group" && child.children.length === 2 && child.position.y === 0) {
-                        let d = flyPos.distanceTo(child.position);
-                        if (d < minDist) { minDist = d; nearestFlower = child; }
-                    }
-                });
-                if (nearestFlower) {
-                    let flowerDir = new THREE.Vector3().subVectors(nearestFlower.position, flyPos).normalize();
-                    let cross = flyDir.clone().cross(flowerDir).y;
-                    rotY += cross * 0.012; 
-                }
-            }
-        class SNNFlyBrain {
-            constructor() { 
-                this.time = 0; 
-                this.energy = 100; 
-                this.cpgInhibitory = 0.0;
-                this.cpgExcitatory1 = 0.5;
-                this.cpgExcitatory2 = 0.5;
-            }
-
-            stepCPG(driveSignal) {
-                let dt = 0.15;
-                let inhibInput = this.cpgExcitatory1 - this.cpgExcitatory2;
-                this.cpgInhibitory += dt * (-this.cpgInhibitory + Math.max(0, inhibInput));
-                let exc1Input = driveSignal - this.cpgInhibitory + Math.sin(this.time * 0.15);
-                let exc2Input = driveSignal + this.cpgInhibitory - Math.cos(this.time * 0.15);
-                this.cpgExcitatory1 += dt * (-this.cpgExcitatory1 + Math.max(0, exc1Input));
-                this.cpgExcitatory2 += dt * (-this.cpgExcitatory2 + Math.max(0, exc2Input));
-                return Math.sin(this.time * 0.4) * (this.cpgExcitatory1 * 0.05 + 0.02);
-            }
-
-            step(eyeLeft, eyeFront, eyeRight, isPerching) {
-                this.time++;
-                if (isPerching) {
-                    this.energy = Math.min(100, this.energy + 0.35); 
-                    let cpgVal = this.stepCPG(0.1); 
-                    return { forward: 0, turn: 0, lift: cpgVal * 0.1, title: "PERCHING (RESTING)", desc: "cpg rhythm resting, energy recovering", dop: "15%", firing: "0.2 kHz", spike: "Resting", synStat: "40k Syn", activeNeurons: 3200, cpgState: "Low/Rest" };
-                } else {
-                    this.energy = Math.max(0, this.energy - 0.04); 
-                }
-
-                if (eyeFront > 0.3) {
-                    let cpgVal = this.stepCPG(1.5); 
                     return { forward: 0.08, turn: (eyeRight >= eyeLeft ? -0.15 : 0.15), lift: cpgVal, title: "EMERGENCY AVOIDANCE", desc: "dng100 & cpg circuit trigger escape", dop: "72%", firing: "3.8 kHz", spike: "Burst!", synStat: "40k Syn", activeNeurons: 17450, cpgState: "Active (Escape)" };
                 } else if (eyeFront > 0.12 || eyeLeft > 0.25 || eyeRight > 0.25) {
                     let cpgVal = this.stepCPG(0.8);
@@ -425,7 +271,7 @@
         let camAngleOffsetH = 0, camAngleOffsetV = 0, camDist = 4.5;
         let joystickMove = { x: 0, y: 0 };
         let perchingTimer = 0, isPerching = false, perchState = 'flying'; 
-        let wallEscapeAngle = null; // Variabel penentu arah buang ke tengah map
+        let wallEscapeAngle = null;
 
         const base = document.getElementById('joystick-base');
         const stick = document.getElementById('joystick-stick');
@@ -492,21 +338,19 @@
             let nearWall = Math.abs(posX) > (mapSize - wallMargin) || Math.abs(posZ) > (mapSize - wallMargin);
 
             if (nearWall) {
-                // Hitung sudut mengarah balik ke tengah koordinat (0,0)
                 let targetAngle = Math.atan2(-posX, -posZ);
                 if (wallEscapeAngle === null) {
                     wallEscapeAngle = targetAngle;
                 }
                 
-                // Paksa belok langsung ke arah tengah tanpa ragu
                 let angleDiff = wallEscapeAngle - rotY;
                 while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
                 while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
                 
                 rotY += Math.sign(angleDiff) * 0.12; 
-                eyeFront = 0.4; // Picu mode Emergency Escape di SNN
+                eyeFront = 0.4;
             } else {
-                wallEscapeAngle = null; // Reset saat udah aman jauh dari tembok
+                wallEscapeAngle = null;
             }
 
             // Sensor Bau Bunga
@@ -591,6 +435,5 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
     </script>
-    <script src="https://pl31655377.profitableratecpmnetwork.com/c6/d7/62/c6d7626fce1b5f1670359b8e1c8f1ff1.js"></script>
 </body>
 </html>
