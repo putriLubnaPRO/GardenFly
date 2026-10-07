@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>The Amazing Digital Fly - 3D Neural HUD</title>
+    <title>The Amazing Digital Fly - CPG Neural HUD</title>
     <style>
         * { box-sizing: border-box; }
         body { margin: 0; overflow: hidden; background: #87CEEB; font-family: Arial, sans-serif; user-select: none; -webkit-user-select: none; }
@@ -18,9 +18,9 @@
         .neuron-glow { color: #ffeb3b; font-weight: bold; }
         .synapse-glow { color: #ff4081; font-weight: bold; }
 
-        /* HUD PANEL OTAK LIVE */
+        /* HUD PANEL OTAK LIVE + CPG */
         #cns-hud {
-            position: absolute; top: 15px; right: 15px; width: 280px;
+            position: absolute; top: 15px; right: 15px; width: 290px;
             background: rgba(10, 15, 25, 0.9); border: 1px solid rgba(0, 229, 255, 0.5);
             border-radius: 10px; padding: 10px; color: #fff; z-index: 5;
             backdrop-filter: blur(6px); box-shadow: 0 4px 20px rgba(0,0,0,0.6); pointer-events: none; font-family: monospace;
@@ -31,7 +31,7 @@
             display: flex; justify-content: space-between; align-items: center;
         }
         #mini-brain-container {
-            width: 100%; height: 110px; background: rgba(0, 0, 0, 0.6);
+            width: 100%; height: 100px; background: rgba(0, 0, 0, 0.6);
             border: 1px solid rgba(0, 229, 255, 0.2); border-radius: 6px; margin-bottom: 6px;
             position: relative; overflow: hidden;
         }
@@ -79,10 +79,10 @@
         <p>Neuron Menyala: <span id="active-neurons-text" class="neuron-glow">15.120 / 19K</span></p>
     </div>
 
-    <!-- HUD PANEL OTAK LIVE -->
+    <!-- HUD PANEL OTAK LIVE + CPG -->
     <div id="cns-hud">
         <div class="cns-header">
-            <span>FLY BRAIN - CENTRAL NERVOUS SYSTEM</span>
+            <span>FLY BRAIN + CPG CIRCUIT</span>
             <span style="color: #00ffcc;">● LIVE</span>
         </div>
         
@@ -92,28 +92,18 @@
 
         <div class="cns-status-box">
             <div id="hud-action-title" class="cns-status-title">AUTONOMOUS FLIGHT</div>
-            <div id="hud-action-desc" class="cns-status-desc">descending neurons drive course</div>
+            <div id="hud-action-desc" class="cns-status-desc">CPG 3-neuron rhythmic active</div>
         </div>
         
         <div class="cns-metrics">
-            <div>Firing Rate: <span id="hud-firing">1.4 kHz</span></div>
+            <div>CPG Rhythm: <span id="hud-cns-rhythm">Active</span></div>
             <div>Dopamine: <span id="hud-dopamine">54%</span></div>
             <div>Spike Act: <span id="hud-spike">Active</span></div>
             <div>Spike Syn: <span id="hud-syn-stat">40k Syn</span></div>
         </div>
     </div>
 
-    <div id="ad-box"><script>
-  atOptions = {
-    'key' : '1906564690a0b056148af87aadb9bbd4',
-    'format' : 'iframe',
-    'height' : 90,
-    'width' : 728,
-    'params' : {}
-  };
-</script>
-<script src="https://www.highrevenueformat.com/1906564690a0b056148af87aadb9bbd4/invoke.js"></script>
-    </div>
+    <div id="ad-box">[ Tempat Iklan Adsterra / AdSense ]</div>
 
     <div id="joystick-base">
         <div id="joystick-stick"></div>
@@ -239,28 +229,54 @@
             flyGroup.add(model);
         });
 
-        // --- SNN FLY BRAIN DENGAN FITUR CAPEK & NEURON MENYALA ---
+        // --- SNN FLY BRAIN + CPG RINGAN (3-NEURON CIRCUIT) ---
         class SNNFlyBrain {
             constructor() { 
                 this.time = 0; 
                 this.energy = 100; 
+                // CPG Minimal 3-Neuron State (1 Inhibitory, 2 Excitatory)
+                this.cpgInhibitory = 0.0;
+                this.cpgExcitatory1 = 0.5;
+                this.cpgExcitatory2 = 0.5;
             }
+
+            // Simulasi CPG Ringan (Oscillator Ritmis Alami)
+            stepCPG(driveSignal) {
+                // Sirkuit interaksi 3 neuron minimal secara matematis ringan
+                let dt = 0.15;
+                let inhibInput = this.cpgExcitatory1 - this.cpgExcitatory2;
+                this.cpgInhibitory += dt * (-this.cpgInhibitory + Math.max(0, inhibInput));
+                
+                let exc1Input = driveSignal - this.cpgInhibitory + Math.sin(this.time * 0.15);
+                let exc2Input = driveSignal + this.cpgInhibitory - Math.cos(this.time * 0.15);
+
+                this.cpgExcitatory1 += dt * (-this.cpgExcitatory1 + Math.max(0, exc1Input));
+                this.cpgExcitatory2 += dt * (-this.cpgExcitatory2 + Math.max(0, exc2Input));
+
+                // Menghasilkan ritme getaran sayap/langkah natural
+                return Math.sin(this.time * 0.4) * (this.cpgExcitatory1 * 0.05 + 0.02);
+            }
+
             step(eyeLeft, eyeFront, eyeRight, isPerching) {
                 this.time++;
                 
                 if (isPerching) {
                     this.energy = Math.min(100, this.energy + 0.35); 
-                    return { forward: 0, turn: 0, lift: 0, title: "PERCHING (RESTING)", desc: "neural fatigue recovered, resting on surface", dop: "15%", firing: "0.2 kHz", spike: "Resting", synStat: "Paused", activeNeurons: 3200 };
+                    let cpgVal = this.stepCPG(0.1); // Mode istirahat / tenang
+                    return { forward: 0, turn: 0, lift: cpgVal * 0.1, title: "PERCHING (RESTING)", desc: "cpg rhythm resting, energy recovering", dop: "15%", firing: "0.2 kHz", spike: "Resting", synStat: "Paused", activeNeurons: 3200, cpgState: "Low/Rest" };
                 } else {
                     this.energy = Math.max(0, this.energy - 0.04); 
                 }
 
                 if (eyeFront > 0.3) {
-                    return { forward: 0.10, turn: (eyeRight > eyeLeft ? -0.05 : 0.05), lift: 0.003, title: "EMERGENCY AVOIDANCE", desc: "optic lobes trigger sharp turn", dop: "72%", firing: "3.8 kHz", spike: "Burst!", synStat: "Active Burst", activeNeurons: 17450 };
+                    let cpgVal = this.stepCPG(1.5); // Pemicu DNg100 darurat
+                    return { forward: 0.10, turn: (eyeRight > eyeLeft ? -0.05 : 0.05), lift: cpgVal, title: "EMERGENCY AVOIDANCE", desc: "dng100 & cpg circuit trigger escape", dop: "72%", firing: "3.8 kHz", spike: "Burst!", synStat: "Active Burst", activeNeurons: 17450, cpgState: "Active (Escape)" };
                 } else if (eyeFront > 0.12 || eyeLeft > 0.25 || eyeRight > 0.25) {
-                    return { forward: 0.10, turn: (eyeRight - eyeLeft) * 0.06, lift: 0.002, title: "OBSTACLE STEERING", desc: "mushroom bodies adjust vector", dop: "58%", firing: "2.2 kHz", spike: "Steering", synStat: "40k Syn", activeNeurons: 14200 };
+                    let cpgVal = this.stepCPG(0.8);
+                    return { forward: 0.10, turn: (eyeRight - eyeLeft) * 0.06, lift: cpgVal, title: "OBSTACLE STEERING", desc: "cpg modulation adjusts vector", dop: "58%", firing: "2.2 kHz", spike: "Steering", synStat: "40k Syn", activeNeurons: 14200, cpgState: "Active (Steer)" };
                 } else {
-                    return { forward: 0.10, turn: Math.sin(this.time * 0.04) * 0.015, lift: Math.sin(this.time * 0.06) * 0.004, title: "AUTONOMOUS FLIGHT", desc: "descending neurons drive course", dop: "54%", firing: "1.4 kHz", spike: "Active", synStat: "40k Syn", activeNeurons: 11800 };
+                    let cpgVal = this.stepCPG(0.5); // Penerbangan otonom normal
+                    return { forward: 0.10, turn: Math.sin(this.time * 0.04) * 0.015, lift: cpgVal, title: "AUTONOMOUS FLIGHT", desc: "cpg 3-neuron rhythmic active", dop: "54%", firing: "1.4 kHz", spike: "Active", synStat: "40k Syn", activeNeurons: 11800, cpgState: "Active (Stable)" };
                 }
             }
         }
@@ -270,7 +286,6 @@
         let camAngleOffsetH = 0, camAngleOffsetV = 0, camDist = 4.5;
         let joystickMove = { x: 0, y: 0 };
 
-        // Variabel Nengger & Transisi Ketinggian Perlahan
         let perchingTimer = 0;
         let isPerching = false;
         let perchState = 'flying'; // 'flying', 'landing', 'perched', 'takeoff'
@@ -304,7 +319,6 @@
             let flyDir = new THREE.Vector3(-Math.sin(rotY), 0, -Math.cos(rotY));
             let eyeLeft = 0, eyeFront = 0, eyeRight = 0, lookRange = 4.0;
 
-            // Logika Capek & Keputusan Nengger (Durasi acak 4 - 12 detik = 240 s.d. 720 frame)
             if (perchState === 'flying' && brain.energy <= 5) {
                 let nearObj = obstacles.find(obs => flyPos.distanceTo(obs.position) < 4.0);
                 if (nearObj) {
@@ -313,7 +327,6 @@
                 }
             }
 
-            // Transisi Ketinggian Perlahan (Turun ke tanah & Naik perlahan saat terbang)
             if (perchState === 'landing') {
                 posY = THREE.MathUtils.lerp(posY, 0.2, 0.05); 
                 if (posY <= 0.25) {
@@ -358,6 +371,7 @@
             // Update Teks HUD
             document.getElementById('hud-action-title').innerText = brainOut.title;
             document.getElementById('hud-action-desc').innerText = brainOut.desc + ` (Energy: ${Math.round(brain.energy)}%)`;
+            document.getElementById('hud-cns-rhythm').innerText = brainOut.cpgState;
             document.getElementById('hud-dopamine').innerText = brainOut.dop;
             document.getElementById('hud-firing').innerText = brainOut.firing;
             document.getElementById('hud-spike').innerText = brainOut.spike;
@@ -424,7 +438,6 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
     </script>
-    <script src="https://pl31655377.profitableratecpmnetwork.com/c6/d7/62/c6d7626fce1b5f1670359b8e1c8f1ff1.js"></script>
 </body>
     </html>
     
