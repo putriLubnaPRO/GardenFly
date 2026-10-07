@@ -11,25 +11,34 @@
         #hud-info {
             position: absolute; top: 15px; left: 15px; background: rgba(0,0,0,0.75);
             padding: 12px 16px; border-radius: 8px; border: 1px solid #00ffcc;
-            font-size: 12px; pointer-events: none; max-width: 280px;
+            font-size: 12px; pointer-events: none; max-width: 280px; z-index: 10;
         }
         #hud-info h3 { margin: 0 0 6px 0; color: #00ffcc; font-size: 14px; }
 
         #hud-stats {
             position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.75);
             padding: 12px 16px; border-radius: 8px; border: 1px solid #ff007f;
-            font-size: 11px; pointer-events: none; text-align: right;
+            font-size: 11px; pointer-events: none; text-align: right; z-index: 10;
         }
         
         #mini-brain-container {
             position: absolute; bottom: 15px; right: 15px; width: 120px; height: 120px;
-            border: 1px solid #00ffcc; border-radius: 8px; background: rgba(0,0,0,0.5); overflow: hidden;
+            border: 1px solid #00ffcc; border-radius: 8px; background: rgba(0,0,0,0.5); overflow: hidden; z-index: 10;
         }
 
+        /* KOTAK IKLAN KHUSUS (AD CONTAINER) */
+        #ad-box-container {
+            position: absolute; bottom: 120px; left: 15px; width: 300px; height: 100px;
+            background: rgba(0, 0, 0, 0.8); border: 1px dashed #ffcc00; border-radius: 8px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 10; overflow: hidden;
+        }
+        #ad-box-container span { font-size: 10px; color: #ffcc00; margin-bottom: 4px; }
+
         #joystick-base {
-            position: absolute; bottom: 30px; left: 30px; width: 80px; height: 80px;
+            position: absolute; bottom: 20px; left: 20px; width: 80px; height: 80px;
             background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.4);
-            border-radius: 50%; touch-action: none;
+            border-radius: 50%; touch-action: none; z-index: 10;
         }
         #joystick-stick {
             position: absolute; top: 20px; left: 20px; width: 40px; height: 40px;
@@ -58,6 +67,12 @@
         <div>Active Neurons: <span id="active-neurons-text" style="color:#00ffcc">11.800 / 19K</span></div>
     </div>
 
+    <!-- KOTAK IKLAN (Bisa ditaruh script AdSense / Adsterra / Banner di dalam div ini) -->
+    <div id="ad-box-container">
+        <span>-- SPACE IKLAN --</span>
+        <!-- Paste Kode Script Iklan / Banner Adsterra / AdSense Kamu Di Sini -->
+    </div>
+
     <div id="mini-brain-container"></div>
 
     <div id="joystick-base">
@@ -81,8 +96,8 @@
         dirLight.position.set(10, 30, 10);
         scene.add(dirLight);
 
-        // Map & Rumput Taman
-        const mapSize = 40;
+        // Map Procedural (Ukuran Acak Bervariasi)
+        const mapSize = Math.floor(Math.random() * 30) + 35; 
         const grassGeo = new THREE.PlaneGeometry(mapSize * 2, mapSize * 2);
         const grassMat = new THREE.MeshLambertMaterial({ color: 0x1b4d2e });
         const grassMesh = new THREE.Mesh(grassGeo, grassMat);
@@ -93,16 +108,24 @@
         gridHelper.position.y = 0.01;
         scene.add(gridHelper);
 
-        // Pembatas Dunia (Wall / Fence)
-        const wallMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc, wireframe: true, transparent: true, opacity: 0.3 });
-        const wallGeo = new THREE.BoxGeometry(mapSize * 2, 4, 0.5);
+        // Tembok Pembatas Dunia Solid
+        const wallMat = new THREE.MeshLambertMaterial({ color: 0x223344, transparent: true, opacity: 0.85 });
+        const wallThickness = 1.0;
+        const wallHeight = 10;
 
-        const wallN = new THREE.Mesh(wallGeo, wallMat); wallN.position.set(0, 2, -mapSize); scene.add(wallN);
-        const wallS = new THREE.Mesh(wallGeo, wallMat); wallS.position.set(0, 2, mapSize); scene.add(wallS);
-        const wallE = new THREE.Mesh(wallGeo, wallMat); wallE.rotation.y = Math.PI / 2; wallE.position.set(mapSize, 2, 0); scene.add(wallE);
-        const wallW = new THREE.Mesh(wallGeo, wallMat); wallW.rotation.y = Math.PI / 2; wallW.position.set(-mapSize, 2, 0); scene.add(wallW);
+        const wallN = new THREE.Mesh(new THREE.BoxGeometry(mapSize * 2 + wallThickness, wallHeight, wallThickness), wallMat); 
+        wallN.position.set(0, wallHeight/2, -mapSize); scene.add(wallN);
 
-        // Pohon Khas Taman
+        const wallS = new THREE.Mesh(new THREE.BoxGeometry(mapSize * 2 + wallThickness, wallHeight, wallThickness), wallMat); 
+        wallS.position.set(0, wallHeight/2, mapSize); scene.add(wallS);
+
+        const wallE = new THREE.Mesh(new THREE.BoxGeometry(wallThickness, wallHeight, mapSize * 2 + wallThickness), wallMat); 
+        wallE.position.set(mapSize, wallHeight/2, 0); scene.add(wallE);
+
+        const wallW = new THREE.Mesh(new THREE.BoxGeometry(wallThickness, wallHeight, mapSize * 2 + wallThickness), wallMat); 
+        wallW.position.set(-mapSize, wallHeight/2, 0); scene.add(wallW);
+
+        // Pohon Acak
         const obstacles = [];
         function createCustomTree(x, z) {
             const treeGroup = new THREE.Group();
@@ -124,19 +147,25 @@
             obstacles.push(treeGroup);
         }
 
-        for (let i = 0; i < 14; i++) {
-            createCustomTree((Math.random() - 0.5) * 60, (Math.random() - 0.5) * 60);
+        const numTrees = Math.floor(Math.random() * 15) + 10;
+        for (let i = 0; i < numTrees; i++) {
+            let tx = (Math.random() - 0.5) * (mapSize * 1.6);
+            let tz = (Math.random() - 0.5) * (mapSize * 1.6);
+            createCustomTree(tx, tz);
         }
 
+        // Bunga Acak
         let flowerGroup = null;
-        for (let i = 0; i < 6; i++) {
+        const numFlowers = Math.floor(Math.random() * 8) + 5;
+        for (let i = 0; i < numFlowers; i++) {
             const flower = new THREE.Group();
             const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1), new THREE.MeshBasicMaterial({ color: 0x00ff55 }));
             stem.position.y = 0.5;
-            const petal = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 8), new THREE.MeshBasicMaterial({ color: 0xff00aa }));
+            const petalMat = new THREE.MeshBasicMaterial({ color: Math.random() > 0.5 ? 0xff00aa : 0xffff00 });
+            const petal = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 8), petalMat);
             petal.position.y = 1.0;
             flower.add(stem); flower.add(petal);
-            flower.position.set((Math.random() - 0.5) * 50, 0, (Math.random() - 0.5) * 50);
+            flower.position.set((Math.random() - 0.5) * (mapSize * 1.6), 0, (Math.random() - 0.5) * (mapSize * 1.6));
             scene.add(flower);
             if (!flowerGroup) flowerGroup = flower;
         }
@@ -150,13 +179,12 @@
         let flyMesh = new THREE.Mesh(fallbackGeo, new THREE.MeshBasicMaterial({ color: 0x00ffcc, wireframe: true }));
         flyGroup.add(flyMesh);
 
-        // DIBENERIN: Memutar mesh di dalam anak (child) biar arah rotasi induk (parent) tidak merusak sistem sensor
         const loader = new THREE.GLTFLoader();
         loader.load('lalat.glb', (gltf) => {
             flyGroup.remove(flyMesh);
             const model = gltf.scene;
             model.scale.set(0.3, 0.3, 0.3);
-            model.rotation.y = Math.PI; // Rotasi internal model lalat
+            model.rotation.y = Math.PI; 
             flyGroup.add(model);
         }, undefined, (err) => {
             console.log("File lalat.glb tidak ditemukan, memakai model default.");
@@ -214,17 +242,17 @@
                 if (isPerching) {
                     this.energy = Math.min(100, this.energy + 0.35); 
                     let cpgVal = this.stepCPG(0.1); 
-                    return { forward: 0, turn: 0, lift: cpgVal * 0.1, title: "PERCHING (RESTING)", desc: "cpg rhythm resting, energy recovering", dop: "15%", firing: "0.2 kHz", spike: "Resting", synStat: "Paused", activeNeurons: 3200, cpgState: "Low/Rest" };
+                    return { forward: 0, turn: 0, lift: cpgVal * 0.1, title: "PERCHING (RESTING)", desc: "cpg rhythm resting, energy recovering", dop: "15%", firing: "0.2 kHz", spike: "Resting", synStat: "40k Syn", activeNeurons: 3200, cpgState: "Low/Rest" };
                 } else {
                     this.energy = Math.max(0, this.energy - 0.04); 
                 }
 
                 if (eyeFront > 0.3) {
                     let cpgVal = this.stepCPG(1.5); 
-                    return { forward: 0.10, turn: (eyeRight > eyeLeft ? -0.05 : 0.05), lift: cpgVal, title: "EMERGENCY AVOIDANCE", desc: "dng100 & cpg circuit trigger escape", dop: "72%", firing: "3.8 kHz", spike: "Burst!", synStat: "Active Burst", activeNeurons: 17450, cpgState: "Active (Escape)" };
+                    return { forward: 0.08, turn: (eyeRight >= eyeLeft ? -0.09 : 0.09), lift: cpgVal, title: "EMERGENCY AVOIDANCE", desc: "dng100 & cpg circuit trigger escape", dop: "72%", firing: "3.8 kHz", spike: "Burst!", synStat: "40k Syn", activeNeurons: 17450, cpgState: "Active (Escape)" };
                 } else if (eyeFront > 0.12 || eyeLeft > 0.25 || eyeRight > 0.25) {
                     let cpgVal = this.stepCPG(0.8);
-                    return { forward: 0.10, turn: (eyeRight - eyeLeft) * 0.06, lift: cpgVal, title: "OBSTACLE STEERING", desc: "cpg modulation adjusts vector", dop: "58%", firing: "2.2 kHz", spike: "Steering", synStat: "40k Syn", activeNeurons: 14200, cpgState: "Active (Steer)" };
+                    return { forward: 0.10, turn: (eyeRight - eyeLeft) * 0.07, lift: cpgVal, title: "OBSTACLE STEERING", desc: "cpg modulation adjusts vector", dop: "58%", firing: "2.2 kHz", spike: "Steering", synStat: "40k Syn", activeNeurons: 14200, cpgState: "Active (Steer)" };
                 } else {
                     let cpgVal = this.stepCPG(0.5); 
                     return { forward: 0.10, turn: Math.sin(this.time * 0.04) * 0.015, lift: cpgVal, title: "AUTONOMOUS FLIGHT", desc: "cpg 3-neuron rhythmic active", dop: "54%", firing: "1.4 kHz", spike: "Active", synStat: "40k Syn", activeNeurons: 11800, cpgState: "Active (Stable)" };
@@ -262,9 +290,8 @@
             requestAnimationFrame(animate);
 
             let flyPos = new THREE.Vector3(posX, posY, posZ);
-            // DIBENERIN: Vektor pandangan mata majemuk disinkronkan kembali dengan arah gerak lalat
             let flyDir = new THREE.Vector3(Math.sin(rotY), 0, Math.cos(rotY));
-            let eyeLeft = 0, eyeFront = 0, eyeRight = 0, lookRange = 4.0;
+            let eyeLeft = 0, eyeFront = 0, eyeRight = 0, lookRange = 5.0;
 
             if (perchState === 'flying' && brain.energy <= 5) {
                 let nearObj = obstacles.find(obs => flyPos.distanceTo(obs.position) < 4.0);
@@ -285,7 +312,7 @@
                 if (posY >= 1.35) { posY = 1.4; perchState = 'flying'; }
             }
 
-            // Sensor Pohon & Obstacle
+            // Sensor Pohon & Halangan
             obstacles.forEach(obs => {
                 let obsPos = new THREE.Vector3(obs.position.x, posY, obs.position.z);
                 let d = flyPos.distanceTo(obsPos);
@@ -293,11 +320,38 @@
                     let dir = new THREE.Vector3().subVectors(obsPos, flyPos).normalize();
                     let cross = flyDir.clone().cross(dir).y;
                     let dot = flyDir.clone().dot(dir);
-                    if (dot > 0.1) eyeFront += (lookRange - d) * 0.15;
-                    if (cross > 0) eyeRight += (lookRange - d) * 0.15;
-                    else eyeLeft += (lookRange - d) * 0.15;
+                    if (dot > 0.1) eyeFront += (lookRange - d) * 0.2;
+                    if (cross > 0) eyeRight += (lookRange - d) * 0.2;
+                    else eyeLeft += (lookRange - d) * 0.2;
                 }
             });
+
+            // Sensor Tembok Batas Dunia
+            const margin = 6.0;
+            if (posZ < -mapSize + margin) {
+                let dist = Math.abs(posZ - (-mapSize));
+                let weight = (margin - dist) * 0.25;
+                if (Math.abs(flyDir.z) > 0.2 && flyDir.z < 0) eyeFront += weight;
+                if (flyDir.x > 0) eyeLeft += weight; else eyeRight += weight;
+            }
+            if (posZ > mapSize - margin) {
+                let dist = Math.abs(mapSize - posZ);
+                let weight = (margin - dist) * 0.25;
+                if (Math.abs(flyDir.z) > 0.2 && flyDir.z > 0) eyeFront += weight;
+                if (flyDir.x > 0) eyeLeft += weight; else eyeRight += weight;
+            }
+            if (posX < -mapSize + margin) {
+                let dist = Math.abs(posX - (-mapSize));
+                let weight = (margin - dist) * 0.25;
+                if (Math.abs(flyDir.x) > 0.2 && flyDir.x < 0) eyeFront += weight;
+                if (flyDir.z > 0) eyeRight += weight; else eyeLeft += weight;
+            }
+            if (posX > mapSize - margin) {
+                let dist = Math.abs(mapSize - posX);
+                let weight = (margin - dist) * 0.25;
+                if (Math.abs(flyDir.x) > 0.2 && flyDir.x > 0) eyeFront += weight;
+                if (flyDir.z > 0) eyeRight += weight; else eyeLeft += weight;
+            }
 
             // Sensor Bau Bunga
             if (perchState === 'flying' && eyeFront < 0.1 && flowerGroup) {
@@ -314,12 +368,6 @@
                     rotY += cross * 0.012; 
                 }
             }
-
-            // Sensor Pembatas Dunia
-            if (posX > (mapSize - 5)) eyeRight += (mapSize - posX) * 0.15;
-            if (posX < (-mapSize + 5)) eyeLeft += (posX - (-mapSize)) * 0.15;
-            if (posZ > (mapSize - 5)) eyeFront += (posZ - posZ) * 0.15;
-            if (posZ < (-mapSize + 5)) eyeFront += (posZ - (-mapSize)) * 0.15;
 
             let brainOut = brain.step(eyeLeft, eyeFront, eyeRight, isPerching);
 
@@ -347,12 +395,12 @@
                 smoothTurn = THREE.MathUtils.lerp(smoothTurn, brainOut.turn, 0.08);
                 rotY += smoothTurn;
 
-                // Arah pergerakan maju disesuaikan persis dengan vektor pandang
                 posX += Math.sin(rotY) * brainOut.forward;
                 posZ += Math.cos(rotY) * brainOut.forward;
 
-                posX = Math.max(-39.0, Math.min(39.0, posX));
-                posZ = Math.max(-39.0, Math.min(39.0, posZ));
+                const bound = mapSize - 1.2;
+                posX = Math.max(-bound, Math.min(bound, posX));
+                posZ = Math.max(-bound, Math.min(bound, posZ));
                 
                 posY += brainOut.lift;
                 if (posY < 1.0) posY = 1.0;
