@@ -67,12 +67,12 @@
     <script>
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x050510, 0.02);
+        scene.fog = new THREE.FogExp2(0x87ceeb, 0.015);
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setClearColor(0x050510);
+        renderer.setClearColor(0x87ceeb);
         container.appendChild(renderer.domElement);
 
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
@@ -93,27 +93,24 @@
         gridHelper.position.y = 0.01;
         scene.add(gridHelper);
 
-        // --- PEMBATAS DUNIA (WALL / FENCE) ---
+        // Pembatas Dunia (Wall / Fence)
         const wallMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc, wireframe: true, transparent: true, opacity: 0.3 });
         const wallGeo = new THREE.BoxGeometry(mapSize * 2, 4, 0.5);
 
-        // Utos, Selatan, Timur, Barat Wall
         const wallN = new THREE.Mesh(wallGeo, wallMat); wallN.position.set(0, 2, -mapSize); scene.add(wallN);
         const wallS = new THREE.Mesh(wallGeo, wallMat); wallS.position.set(0, 2, mapSize); scene.add(wallS);
         const wallE = new THREE.Mesh(wallGeo, wallMat); wallE.rotation.y = Math.PI / 2; wallE.position.set(mapSize, 2, 0); scene.add(wallE);
         const wallW = new THREE.Mesh(wallGeo, wallMat); wallW.rotation.y = Math.PI / 2; wallW.position.set(-mapSize, 2, 0); scene.add(wallW);
 
-        // --- POHON KHAS TAMAN ---
+        // Pohon Khas Taman
         const obstacles = [];
         function createCustomTree(x, z) {
             const treeGroup = new THREE.Group();
-            // Batang Pohon
             const trunkMat = new THREE.MeshLambertMaterial({ color: 0x5c4033 });
             const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 3, 8), trunkMat);
             trunk.position.y = 1.5;
             treeGroup.add(trunk);
 
-            // Daun Pohon Bertingkat (Khas)
             const foliageMat = new THREE.MeshLambertMaterial({ color: 0x2e8b57 });
             const f1 = new THREE.Mesh(new THREE.ConeGeometry(2, 2.5, 8), foliageMat);
             f1.position.y = 3.2;
@@ -127,7 +124,6 @@
             obstacles.push(treeGroup);
         }
 
-        // Sebar Pohon Khas
         for (let i = 0; i < 14; i++) {
             createCustomTree((Math.random() - 0.5) * 60, (Math.random() - 0.5) * 60);
         }
@@ -145,23 +141,22 @@
             if (!flowerGroup) flowerGroup = flower;
         }
 
-        // --- LOAD LALAT.GLB ---
+        // Load lalat.glb
         const flyGroup = new THREE.Group();
         scene.add(flyGroup);
 
-        // Fallback Mesh (Kerucut) kalau lalat.glb belum ter-load
         const fallbackGeo = new THREE.ConeGeometry(0.2, 0.6, 6);
         fallbackGeo.rotateX(Math.PI / 2);
         let flyMesh = new THREE.Mesh(fallbackGeo, new THREE.MeshBasicMaterial({ color: 0x00ffcc, wireframe: true }));
         flyGroup.add(flyMesh);
 
-        // Memuat Model 3D lalat.glb
+        // DIBENERIN: Memutar mesh di dalam anak (child) biar arah rotasi induk (parent) tidak merusak sistem sensor
         const loader = new THREE.GLTFLoader();
         loader.load('lalat.glb', (gltf) => {
-            flyGroup.remove(flyMesh); // Hapus fallback kerucut
+            flyGroup.remove(flyMesh);
             const model = gltf.scene;
-            model.scale.set(0.3, 0.3, 0.3); // Sesuaikan ukuran
-            model.rotation.y = Math.PI; // Sesuaikan arah depan model
+            model.scale.set(0.3, 0.3, 0.3);
+            model.rotation.y = Math.PI; // Rotasi internal model lalat
             flyGroup.add(model);
         }, undefined, (err) => {
             console.log("File lalat.glb tidak ditemukan, memakai model default.");
@@ -267,7 +262,8 @@
             requestAnimationFrame(animate);
 
             let flyPos = new THREE.Vector3(posX, posY, posZ);
-            let flyDir = new THREE.Vector3(-Math.sin(rotY), 0, -Math.cos(rotY));
+            // DIBENERIN: Vektor pandangan mata majemuk disinkronkan kembali dengan arah gerak lalat
+            let flyDir = new THREE.Vector3(Math.sin(rotY), 0, Math.cos(rotY));
             let eyeLeft = 0, eyeFront = 0, eyeRight = 0, lookRange = 4.0;
 
             if (perchState === 'flying' && brain.energy <= 5) {
@@ -319,10 +315,10 @@
                 }
             }
 
-            // Sensor Tembok/Pembatas Dunia (Wall Detection)
+            // Sensor Pembatas Dunia
             if (posX > (mapSize - 5)) eyeRight += (mapSize - posX) * 0.15;
             if (posX < (-mapSize + 5)) eyeLeft += (posX - (-mapSize)) * 0.15;
-            if (posZ > (mapSize - 5)) eyeFront += (mapSize - posZ) * 0.15;
+            if (posZ > (mapSize - 5)) eyeFront += (posZ - posZ) * 0.15;
             if (posZ < (-mapSize + 5)) eyeFront += (posZ - (-mapSize)) * 0.15;
 
             let brainOut = brain.step(eyeLeft, eyeFront, eyeRight, isPerching);
@@ -351,8 +347,9 @@
                 smoothTurn = THREE.MathUtils.lerp(smoothTurn, brainOut.turn, 0.08);
                 rotY += smoothTurn;
 
-                posX -= Math.sin(rotY) * brainOut.forward;
-                posZ -= Math.cos(rotY) * brainOut.forward;
+                // Arah pergerakan maju disesuaikan persis dengan vektor pandang
+                posX += Math.sin(rotY) * brainOut.forward;
+                posZ += Math.cos(rotY) * brainOut.forward;
 
                 posX = Math.max(-39.0, Math.min(39.0, posX));
                 posZ = Math.max(-39.0, Math.min(39.0, posZ));
@@ -370,9 +367,9 @@
 
             let totalCamAngle = rotY + Math.PI + camAngleOffsetH;
             camera.position.set(
-                posX + Math.sin(totalCamAngle) * camDist,
+                posX - Math.sin(totalCamAngle) * camDist,
                 posY + 1.0 + camAngleOffsetV,
-                posZ + Math.cos(totalCamAngle) * camDist
+                posZ - Math.cos(totalCamAngle) * camDist
             );
             camera.lookAt(posX, posY + 0.2, posZ);
 
