@@ -98,8 +98,9 @@
         <div class="cns-metrics">
             <div>CPG Rhythm: <span id="hud-cns-rhythm">Active</span></div>
             <div>Dopamine: <span id="hud-dopamine">54%</span></div>
+            <div>Firing: <span id="hud-firing">1.4 kHz</span></div>
             <div>Spike Act: <span id="hud-spike">Active</span></div>
-            <div>Spike Syn: <span id="hud-syn-stat">40k Syn</span></div>
+            <div>Synapse: <span id="hud-syn-stat">40k Syn</span></div>
         </div>
     </div>
 
@@ -111,8 +112,8 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-        <script>
-        // --- 1. SETUP DUNIA 3D UTAMA ---
+
+    <script>
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87CEEB);
         scene.fog = new THREE.FogExp2(0x87CEEB, 0.012);
@@ -122,12 +123,12 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
         const sunLight = new THREE.DirectionalLight(0xfffaed, 1.2);
         sunLight.position.set(30, 50, 20);
         scene.add(sunLight);
 
-        // --- 2. MINI 3D NEURON DI HUD ---
+        // MINI 3D NEURON HUD
         const miniContainer = document.getElementById('mini-brain-container');
         const miniCanvas = document.getElementById('mini-brain-canvas');
         const miniRenderer = new THREE.WebGLRenderer({ canvas: miniCanvas, antialias: true, alpha: true });
@@ -170,7 +171,7 @@
         const miniSynapseLines = new THREE.LineSegments(miniSynapseGeo, miniSynapseMat);
         miniBrainGroup.add(miniSynapseLines);
 
-        // --- TANAH, BUNGA (15 BIJI), & POHON ---
+        // TANAH & LINGKUNGAN
         const ground = new THREE.Mesh(
             new THREE.PlaneGeometry(120, 120),
             new THREE.MeshStandardMaterial({ color: 0x3b7a57, roughness: 0.9 })
@@ -215,34 +216,29 @@
             if (Math.abs(x) > 8 || Math.abs(z) > 8) { treeGroup.position.set(x, 0, z); scene.add(treeGroup); obstacles.push(treeGroup); }
         }
 
-        // --- MODEL LALAT ---
         const flyGroup = new THREE.Group();
         scene.add(flyGroup);
-        const fallbackFly = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), new THREE.MeshStandardMaterial({ color: 0x111 }));
-        flyGroup.add(fallbackFly);
+        const flyBody = new THREE.Mesh(new THREE.SphereGeometry(0.35, 12, 12), new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.3 }));
+        flyGroup.add(flyBody);
 
         new THREE.GLTFLoader().load('lalat.glb', (gltf) => {
-            flyGroup.remove(fallbackFly);
+            flyGroup.remove(flyBody);
             const model = gltf.scene;
             model.scale.set(0.5, 0.5, 0.5);
             model.position.set(0, -0.1, 0);
             flyGroup.add(model);
-        });
-
-        // --- SNN FLY BRAIN + CPG RINGAN (3-NEURON CIRCUIT) ---
+        }, undefined, () => {});
+                // --- 3. SNN FLY BRAIN + CPG RINGAN (3-NEURON CIRCUIT) ---
         class SNNFlyBrain {
             constructor() { 
                 this.time = 0; 
                 this.energy = 100; 
-                // CPG Minimal 3-Neuron State (1 Inhibitory, 2 Excitatory)
                 this.cpgInhibitory = 0.0;
                 this.cpgExcitatory1 = 0.5;
                 this.cpgExcitatory2 = 0.5;
             }
 
-            // Simulasi CPG Ringan (Oscillator Ritmis Alami)
             stepCPG(driveSignal) {
-                // Sirkuit interaksi 3 neuron minimal secara matematis ringan
                 let dt = 0.15;
                 let inhibInput = this.cpgExcitatory1 - this.cpgExcitatory2;
                 this.cpgInhibitory += dt * (-this.cpgInhibitory + Math.max(0, inhibInput));
@@ -253,7 +249,6 @@
                 this.cpgExcitatory1 += dt * (-this.cpgExcitatory1 + Math.max(0, exc1Input));
                 this.cpgExcitatory2 += dt * (-this.cpgExcitatory2 + Math.max(0, exc2Input));
 
-                // Menghasilkan ritme getaran sayap/langkah natural
                 return Math.sin(this.time * 0.4) * (this.cpgExcitatory1 * 0.05 + 0.02);
             }
 
@@ -262,20 +257,20 @@
                 
                 if (isPerching) {
                     this.energy = Math.min(100, this.energy + 0.35); 
-                    let cpgVal = this.stepCPG(0.1); // Mode istirahat / tenang
+                    let cpgVal = this.stepCPG(0.1); 
                     return { forward: 0, turn: 0, lift: cpgVal * 0.1, title: "PERCHING (RESTING)", desc: "cpg rhythm resting, energy recovering", dop: "15%", firing: "0.2 kHz", spike: "Resting", synStat: "Paused", activeNeurons: 3200, cpgState: "Low/Rest" };
                 } else {
                     this.energy = Math.max(0, this.energy - 0.04); 
                 }
 
                 if (eyeFront > 0.3) {
-                    let cpgVal = this.stepCPG(1.5); // Pemicu DNg100 darurat
+                    let cpgVal = this.stepCPG(1.5); 
                     return { forward: 0.10, turn: (eyeRight > eyeLeft ? -0.05 : 0.05), lift: cpgVal, title: "EMERGENCY AVOIDANCE", desc: "dng100 & cpg circuit trigger escape", dop: "72%", firing: "3.8 kHz", spike: "Burst!", synStat: "Active Burst", activeNeurons: 17450, cpgState: "Active (Escape)" };
                 } else if (eyeFront > 0.12 || eyeLeft > 0.25 || eyeRight > 0.25) {
                     let cpgVal = this.stepCPG(0.8);
                     return { forward: 0.10, turn: (eyeRight - eyeLeft) * 0.06, lift: cpgVal, title: "OBSTACLE STEERING", desc: "cpg modulation adjusts vector", dop: "58%", firing: "2.2 kHz", spike: "Steering", synStat: "40k Syn", activeNeurons: 14200, cpgState: "Active (Steer)" };
                 } else {
-                    let cpgVal = this.stepCPG(0.5); // Penerbangan otonom normal
+                    let cpgVal = this.stepCPG(0.5); 
                     return { forward: 0.10, turn: Math.sin(this.time * 0.04) * 0.015, lift: cpgVal, title: "AUTONOMOUS FLIGHT", desc: "cpg 3-neuron rhythmic active", dop: "54%", firing: "1.4 kHz", spike: "Active", synStat: "40k Syn", activeNeurons: 11800, cpgState: "Active (Stable)" };
                 }
             }
@@ -288,7 +283,7 @@
 
         let perchingTimer = 0;
         let isPerching = false;
-        let perchState = 'flying'; // 'flying', 'landing', 'perched', 'takeoff'
+        let perchState = 'flying'; 
 
         const base = document.getElementById('joystick-base');
         const stick = document.getElementById('joystick-stick');
@@ -311,7 +306,7 @@
         window.addEventListener('mousemove', e => { if (isDown) updateJoystick(e.clientX, e.clientY); });
         window.addEventListener('mouseup', () => { if (isDown) { isDown = false; stick.style.transform = `translate(0px, 0px)`; joystickMove.x = 0; joystickMove.y = 0; } });
 
-        // --- ANIMASI LOOP UTAMA ---
+        // --- 4. ANIMASI LOOP UTAMA ---
         function animate() {
             requestAnimationFrame(animate);
 
@@ -439,5 +434,4 @@
         });
     </script>
 </body>
-    </html>
-    
+</html>
